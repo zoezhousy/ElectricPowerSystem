@@ -1,18 +1,13 @@
 import numpy as np
 
 
-def Huri_Method (MCLGT, datanew):
-
-    dataset = MCLGT['huri']
-    R = MCLGT['radi']
-
+def Huri_Method (R,dataset, datanew):
     result = 0
     if not dataset:
         result = 1
         return result
 
-    for i in range(dataset.shape[0]):
-        sample = dataset[i]
+    for sample in dataset:
         Dki = np.sqrt((datanew[4] - sample[4]) ** 2 + (datanew[5] - sample[5]) ** 2)
         if Dki <= R:
             if datanew[0] <= sample[0]:

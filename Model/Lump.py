@@ -273,7 +273,7 @@ class Current_Source_Empirical(Component):
         current(numpy.ndarray,1*(time/dt))：当前电流源电流
         """
         calculate_num = int(np.ceil(calculate_time/dt))
-        current = np.resize(self.parameters['voltage'], calculate_num)
+        current = np.resize(self.parameters['current'], calculate_num)
         return current
 
 
@@ -728,6 +728,15 @@ class Time_Controled_Switch(Component):
         super().__init__(name, bran, node1, node2,
                          {"close_time": close_time, "type_of_data": type_of_data, "open_time": open_time,
                           'resistance': resistance})
+
+    def r_parameter_assign(self, r):
+        """
+        【函数功能】电阻参数分配
+        【入参】
+        r(pandas.Dataframe:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
+        """
+        r.loc[self.bran[0], self.bran[0]] = self.parameters['resistance'] if self.parameters['type_of_data'] == 1 else 1e-6
+
     def update_parameter(self, t):
         """
         【函数功能】参数更新计算
@@ -851,8 +860,8 @@ class MTCK(Component):
         【入参】
         ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
         """
-        for node in self.node1:
-            self.assign_incidence_matrix_value(ima, self.bran[0], node, 1)
+        for ith in range(self.node1.shape[0]):
+            self.assign_incidence_matrix_value(ima, self.bran[ith], self.node1[ith], 1)
 
     def imb_parameter_assign(self, imb):
         """
@@ -860,8 +869,8 @@ class MTCK(Component):
         【入参】
         imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
         """
-        for node in self.node1:
-            self.assign_incidence_matrix_value(imb, self.bran[0], node, 1)
+        for ith in range(self.node1.shape[0]):
+            self.assign_incidence_matrix_value(imb, self.bran[ith], self.node1[ith], 1)
 
     def r_parameter_assign(self, r):
         """
@@ -871,7 +880,7 @@ class MTCK(Component):
         """
         constants = Constant()
         Vair = constants.Vair
-        Lm = calculate_OHL_mutual_inductance(self.parameters['radius'], self.parameters['high'], self.parameters['distance'], constants)
+        Lm = calculate_OHL_mutual_inductance(self.parameters['radius'], self.parameters['high'], self.parameters['distance'], constants.mu0)
         resistance = Lm*Vair
         r.loc[self.bran, self.bran] = resistance
 
@@ -968,7 +977,7 @@ class Lumps:
         for component_list in [self.voltage_control_voltage_sources, self.current_control_voltage_sources,
                                self.voltage_control_current_sources, self.current_control_current_sources, 
                                self.transformers_one_phase, self.transformers_three_phase,
-                               self.mutual_inductors_two_port, self.mutual_inductors_three_port, self.MTCKs]:
+                               self.mutual_inductors_two_port, self.mutual_inductors_three_port]:
             for component in component_list:
                 for node1 in component.node1:
                     all_nodes[node1] = True
@@ -976,6 +985,12 @@ class Lumps:
                     all_nodes[node2] = True
                 for bran in component.bran:
                     all_brans[bran] = True
+
+        for component in self.MTCKs:
+            for node1 in component.node1:
+                all_nodes[node1] = True
+            for bran in component.bran:
+                all_brans[bran] = True
 
         if '---' in all_brans:
             del all_brans['---']
@@ -1030,7 +1045,7 @@ class Lumps:
         """
         calculate_num = int(np.ceil(calculate_time / dt))
         # 电源矩阵初始化
-        self.voltage_source_matrix = pd.DataFrame(0, index=self.branList, columns=range(calculate_num))
+        self.voltage_source_matrix = pd.DataFrame(0, index=self.branList, columns=range(calculate_num), dtype=float)
 
         for voltage_source_list in [self.voltage_sources_cosine, self.voltage_sources_empirical]:
             for voltage_source in voltage_source_list:

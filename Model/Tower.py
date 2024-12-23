@@ -13,6 +13,8 @@ import numpy as np
 from scipy.linalg import block_diag
 from Utils.Matrix import expand_matrix, copy_and_expand_matrix, update_matrix, update_and_sum_matrix
 from Function.Calculators.Impedance import calculate_OHL_wire_impedance
+from Function.Calculators.Resistance import calculate_OHL_resistance
+from Function.Calculators.Inductance import calculate_OHL_inductance
 from Vector_Fitting.Calculators.vecfit_kernel_z import vecfit_kernel_Z_Ding
 from Vector_Fitting.Drivers.VFdriver import VFdriver
 from Vector_Fitting.Drivers.RPdriver import RPdriver

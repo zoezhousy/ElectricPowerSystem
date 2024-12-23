@@ -10,6 +10,25 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
     plt.close('all')
 
     # struct获取每个变量名
+    casemodel=MC_lgtn['casemodel']
+    Nmodel = MC_lgtn['Nmodel']
+    pn = MC_lgtn['pn']
+    Ip1stmin = MC_lgtn['Ip1stmin']
+    Ip1stmax = MC_lgtn['Ip1stmax']
+    tf1stmin = MC_lgtn['tf1stmin']
+    tf1stmax = MC_lgtn['tf1stmax']
+    Sm1stmin = MC_lgtn['Sm1stmin']
+    Sm1stmax = MC_lgtn['Sm1stmax']
+    th1stmin = MC_lgtn['th1stmin']
+    th1stmax = MC_lgtn['th1stmax']
+    Ipmin = MC_lgtn['Ipmin']
+    Ipmax = MC_lgtn['Ipmax']
+    tfmin = MC_lgtn['tfmin']
+    tfmax = MC_lgtn['tfmax']
+    Smmin = MC_lgtn['Smmin']
+    Smmax = MC_lgtn['Smmax']
+    thmin = MC_lgtn['thmin']
+    thmax = MC_lgtn['thmax']
     mode = MC_lgtn['mode']
     muN = MC_lgtn['muN']
     sigmaN = MC_lgtn['sigmaN']
@@ -29,49 +48,76 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
     # python特定排序从0开始
     Edges -= 1
 
-    # fixed total number of flashes
-    if mode == 1:
-        flash = fixn
-        sN_all = np.zeros((1, flash), dtype=int)
-        for e in range(flash):
-            ZkN = np.random.randn(1)  # ZkN is a standard normal variates.(随机生成的标准正态变量)
-            sN = np.round(np.exp(muN + sigmaN * ZkN))  # 四舍五入
-            # number of stroke(stroke的范围是[1,20])
-            if stroke==1:
-                sN=np.array([1.])
+    # 不同情况对应的参数
+    # 一般情况
+    sN_all = None
+    if casemodel==1:
+        # fixed total number of flashes
+        if mode == 1:
+            flash = fixn
+            sN_all = np.zeros((1, flash), dtype=int)
+            for e in range(flash):
+                ZkN = np.random.randn(1)  # ZkN is a standard normal variates.(随机生成的标准正态变量)
+                sN = np.round(np.exp(muN + sigmaN * ZkN))  # 四舍五入
+                # number of stroke(stroke的范围是[1,20])
+                if stroke == 1:
+                    sN = np.array([1.])
 
-            if sN > 20:
-                sN = np.array([20.])
-            elif sN < 1:
-                sN = np.array([1.])
+                if sN > 20:
+                    sN = np.array([20.])
+                elif sN < 1:
+                    sN = np.array([1.])
 
-            sN_all[0, e] = sN[0]
+                sN_all[0, e] = sN[0]
 
-    if mode == 2:
-        # fixed total number of stroks(设置超过fixn次停止)
-        flash_init = fixn
-        sN_all_init = np.zeros((1, flash_init), dtype=int)
-        for e in range(flash_init):
-            ZkN = np.random.randn(1)  # ZkN is a standard normal variates.(随机生成的标准正态变量)
-            sN_init = np.round(np.exp(muN + sigmaN * ZkN))  # 四舍五入
-            if stroke==1:
-                sN_init=np.array([1.])
+        if mode == 2:
+            # fixed total number of stroks(设置超过fixn次停止)
+            flash_init = fixn
+            sN_all = np.zeros((1, flash_init), dtype=int)
+            for e in range(flash_init):
+                ZkN = np.random.randn(1)  # ZkN is a standard normal variates.(随机生成的标准正态变量)
+                sN_init = np.round(np.exp(muN + sigmaN * ZkN))  # 四舍五入
+                if stroke == 1:
+                    sN_init = np.array([1.])
 
-            # number of stroke(stroke的范围是[1,20])
-            if sN_init > 20:
-                sN_init = np.array([20.])
-            elif sN_init < 1:
-                sN_init = np.array([1.])
+                # number of stroke(stroke的范围是[1,20])
+                if sN_init > 20:
+                    sN_init = np.array([20.])
+                elif sN_init < 1:
+                    sN_init = np.array([1.])
 
-            sN_all_init[0, e] = sN_init[0]
+                sN_all [0, e] = sN_init[0]
 
-        for e in range(flash_init):
-            stroke_sum = np.sum(sN_all_init[0, 0:e + 1])
-            if stroke_sum > fixn:
-                break
+            for e in range(flash_init):
+                stroke_sum = np.sum(sN_all [0, 0:e + 1])
+                if stroke_sum > fixn:
+                    break
 
-        flash = e + 1
-        sN_all = sN_all_init[0, 0:e + 1]
+            flash = e + 1
+            sN_all = sN_all [0, 0:e + 1]
+
+    else: # 特定情况
+
+        if mode == 1:
+            flash = fixn
+            sN_all = np.zeros((1, flash), dtype=int)
+            for e in range(flash):
+                sN = np.array([1.])  # number of stroke固定是1
+                sN_all[0, e] = sN[0]
+
+        if mode == 2:
+            # fixed total number of stroks(设置超过fixn次停止)
+            flash_init = fixn
+            sN_all = np.zeros((1, flash_init), dtype=int)
+            for e in range(flash_init):
+                sN_init = np.array([1.])  # number of stroke固定是1
+                sN_all [0, e] = sN_init[0]
+
+            for e in range(flash_init):
+                stroke_sum = np.sum(sN_all [0, 0:e + 1])
+                if stroke_sum > fixn:
+                    break
+
 
     flash_number = np.repeat(np.arange(1, sN_all.size + 1), sN_all)  # flash_number = flash_number.reshape(-1,1).T
     stroke_number = np.concatenate([np.arange(1, s + 1) for s in sN_all])
@@ -86,7 +132,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
             plt.plot([pt1[0], pt2[0]], [pt1[1], pt2[1]], 'k-', linewidth=2)
         plt.scatter(Coordinates[:, 0], Coordinates[:, 1], s=50, color='k', marker='o')  # 画杆塔代表的点
 
-    # plt.show()
+     #plt.show()
     # 为第二步画最小的长方形做准备-随机形成uniform分布的点
     # 最小的x坐标到最大的x坐标
     xmin = np.min(XY_need3[:, 0])  # 左下角x坐标
@@ -98,7 +144,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
     plt.plot(XY_need3[:, 0], XY_need3[:, 1], 'k-', linewidth=2)
     plt.plot(XY_need3[:, 0], XY_need3[:, 1], 'r*')
     plt.axis('equal')
-    pn = fixn * 100  # 点的数量
+    # pn = fixn * 100  # 点的数量
 
     xp = xmin + (xmax - xmin) * np.random.rand(pn, 1)  # 生成x坐标
     yp = ymin + (ymax - ymin) * np.random.rand(pn, 1)  # 生成y坐标
@@ -209,13 +255,22 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
                     Q[3, 0] * (np.log(Ip[i]) - muI[0]) + Q[3, 1] * (np.log(tf[i]) - muI[1]) + Q[3, 2] * (
                     np.log(Sm[i]) - muI[2]))
             th[i] = np.exp(muco[3] + sigmaco[3] * Zk[3])
-            # Ip的范围是[3,200] , tf的范围是[0,30] , Sm的范围是[0,200] and th的范围是[0,500]???????????????
-            valid_Ip = (3 <= Ip[i] <= 200)  # 判断Ip范围
-            valid_tf = (1e-3 < tf[i] <= 30)  # 判断tf范围
-            valid_Sm = (1e-3 < Sm[i] <= 200)  # 判断Sm范围
-            valid_th = (1e-3 < th[i] <= 500)  # 判断th范围
-            i += valid_Ip * valid_tf * valid_Sm * valid_th
 
+            # Ip的范围 , tf的范围, Sm的范围 and th的范围
+            # 不同情况对应的参数
+            # 一般情况
+            if casemodel == 1 & Nmodel ==-1: # N是随机的
+                valid_Ip = (Ip1stmin <= Ip[i] <= Ip1stmax)  # 判断Ip范围
+                valid_tf = (tf1stmin < tf[i] <= tf1stmax)  # 判断tf范围
+                valid_Sm = (Sm1stmin < Sm[i] <= Sm1stmax)  # 判断Sm范围
+                valid_th = (th1stmin < th[i] <= th1stmax)  # 判断th范围
+            else: # 特定情况
+                valid_Ip = (min(Ip1stmin,Ipmin) <= Ip[i] <= max(Ip1stmax,Ipmax))  # 判断Ip范围
+                valid_tf = (min(tf1stmin,tfmin) < tf[i] <= max(tf1stmax,tfmax))  # 判断tf范围
+                valid_Sm = (min(Sm1stmin,Smmin) < Sm[i] <= max(Sm1stmax,Smmax))  # 判断Sm范围
+                valid_th = (min(th1stmin,thmin) < th[i] <= max(th1stmax,thmax))  # 判断th范围
+
+            i += valid_Ip * valid_tf * valid_Sm * valid_th
             # a given quadruple of values for Ip tf Sm th
             lightp = np.vstack((Ip, tf, Sm, th)).T
         else:
@@ -258,13 +313,21 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
                     Q[3, 0] * (np.log(Ip[i]) - mu[0]) + Q[3, 1] * (np.log(tf[i]) - mu[1]) + Q[3, 2] * (
                     np.log(Sm[i]) - mu[2]))
             th[i] = np.exp(muco[3] + sigmaco[3] * Zk[3])
-            # Ip的范围是[3,200] , tf的范围是[0,30] , Sm的范围是[0,200] and th的范围是[0,500]???????????????
-            valid_Ip = (3 <= Ip[i] <= 200)  # 判断Ip范围
-            valid_tf = (1e-3 < tf[i] <= 30)  # 判断tf范围
-            valid_Sm = (1e-3 < Sm[i] <= 200)  # 判断Sm范围
-            valid_th = (1e-3 < th[i] <= 500)  # 判断th范围
-            i += valid_Ip * valid_tf * valid_Sm * valid_th
+            # Ip的范围 , tf的范围, Sm的范围 and th的范围
+            # 不同情况对应的参数
+            # 一般情况
+            if casemodel == 1 & Nmodel ==-1: # N是随机的:
+                valid_Ip = (Ipmin <= Ip[i] <= Ipmax)  # 判断Ip范围
+                valid_tf = (tfmin < tf[i] <= tfmax)  # 判断tf范围
+                valid_Sm = (Smmin < Sm[i] <= Smmax)  # 判断Sm范围
+                valid_th = (thmin < th[i] <= thmax)  # 判断th范围
+            else:  # 特定情况
+                valid_Ip = (min(Ip1stmin, Ipmin) <= Ip[i] <= max(Ip1stmax, Ipmax))  # 判断Ip范围
+                valid_tf = (min(tf1stmin, tfmin) < tf[i] <= max(tf1stmax, tfmax))  # 判断tf范围
+                valid_Sm = (min(Sm1stmin, Smmin) < Sm[i] <= max(Sm1stmax, Smmax))  # 判断Sm范围
+                valid_th = (min(th1stmin, thmin) < th[i] <= max(th1stmax, thmax))  # 判断th范围
 
+            i += valid_Ip * valid_tf * valid_Sm * valid_th
             # a given quadruple of values for Ip tf Sm th
             lightp = np.vstack((Ip, tf, Sm, th)).T
 

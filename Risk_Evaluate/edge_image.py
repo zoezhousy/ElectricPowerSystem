@@ -270,6 +270,10 @@ def edge_image(Line, DSave, LatDis_max, foldname):
             B = exist_line[i, 0, :]
             C = exist_line[i, 1, :]
             # 计算点1和点2之间的距离
+            # B = np.where(np.isinf(B), np.nan, B)  # 将 inf 替换为 NaN
+            # C = np.where(np.isinf(C), np.nan, C)  # 将 inf 替换为 NaN
+            # B = np.nan_to_num(B)  # 将 NaN 替换为 0 或其他数值
+            # C = np.nan_to_num(C)
             distance1 = distance.euclidean(B, C)
             distance2 = distance.euclidean(A, B)
             distance3 = distance.euclidean(A, C)

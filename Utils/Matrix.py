@@ -1,4 +1,11 @@
+from sre_constants import error
+
 import numpy as np
+import scipy as sp
+# from cupyx.scipy.linalg import block_diag
+import time
+
+#from numba.core.cgutils import printf
 
 
 def expand_matrix(matrix, i, end, m):
@@ -111,3 +118,51 @@ def update_and_sum_matrix(matrix):
     new_matrix[0, 0] = -0.5 * (np.sum(new_matrix[0, 1:]) + np.sum(new_matrix[1:, 0]))
 
     return new_matrix
+
+def block_diag_3dim(*arrays):
+    """
+    Create a block diagonal matrix from provided arrays, only for 3 dimensions matrix.
+    The third dimension of each matrix have same length
+    """
+    # start_time = time.time()
+    matrix_num = len(arrays)
+
+    length_3dim = arrays[0].shape[2]
+
+    matrix_shape = np.zeros((matrix_num, 2), dtype=int)
+    for i in range(matrix_num):
+        matrix_shape[i, :] = arrays[i].shape[0:2]
+
+    blocked_matrix = np.zeros((int(matrix_shape[:, 0].sum()), int(matrix_shape[:, 1].sum()), length_3dim))
+    n = 0
+    m = 0
+    for i in range(matrix_num):
+        blocked_matrix[n:n + matrix_shape[i, 0], m:m + matrix_shape[i, 1], :] = arrays[i]
+        n += matrix_shape[i, 0]
+        m += matrix_shape[i, 1]
+
+    # blocked_matrix = np.copy(arrays[0])
+    # for i in range(matrix_num-1):
+    #     zeros_upper = np.zeros((blocked_matrix.shape[0], arrays[i + 1].shape[1], length_3dim))
+    #     zeros_down = np.zeros((arrays[i + 1].shape[0], blocked_matrix.shape[1], length_3dim))
+    #     temp_upper = np.hstack((blocked_matrix, zeros_upper))
+    #     temp_down = np.hstack((zeros_down, arrays[i + 1]))
+    #     blocked_matrix = np.vstack((temp_upper, temp_down))
+    # end_time = time.time()
+    # print("耗时：{:f}秒".format(end_time - start_time))
+    return blocked_matrix
+
+def repet_block_diag(matrix, times: int):
+    if len(matrix.shape) == 2:
+        block_diag = sp.linalg.block_diag
+    elif len(matrix.shape) == 3:
+        block_diag = block_diag_3dim
+    else:
+        raise Exception('The input matrix should has 2 or 3 dimensions')
+
+    expression = 'block_diag(matrix'
+    for i in range(times):
+        expression += ', matrix'
+    expression += ')'
+
+    return eval(expression)

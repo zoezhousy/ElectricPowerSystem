@@ -13,11 +13,11 @@ def Huri_Method (MCLGT, datanew):
 
     for i in range(dataset.shape[0]):
         sample = dataset[i]
-        Dki = np.sqrt((datanew[4] - sample[4]) ** 2 + (datanew[5] - sample[5]) ** 2) #新落雷点和过去的距离
+        Dki = np.sqrt((datanew[4] - sample[4]) ** 2 + (datanew[5] - sample[5]) ** 2)
         if Dki <= R:
             if datanew[0] <= sample[0]:
                 if datanew[1] >= sample[1]:
-                    ds1 = np.sqrt((datanew[4] - sample[6]) ** 2 + (datanew[5] - sample[7]) ** 2)#新落雷点和两端的距离
+                    ds1 = np.sqrt((datanew[4] - sample[6]) ** 2 + (datanew[5] - sample[7]) ** 2)
                     ds2 = np.sqrt((datanew[4] - sample[8]) ** 2 + (datanew[5] - sample[9]) ** 2)
                     if ds1 >= sample[10] and ds2 >= sample[11]:
                         result = 1

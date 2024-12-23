@@ -8,8 +8,9 @@ from Info import Info
 
 frq_default = np.logspace(0, 9, 37)
 
+
 class OHL:
-    def __init__(self, name: str, Info: Info, Wires: Wires,  Phase, phase_num: int, ground: Ground):
+    def __init__(self, name: str, Info: Info, Wires: Wires, Phase, phase_num: int, ground: Ground):
         """
         初始化架空线对象。
         name (str): 线的名称
@@ -48,7 +49,7 @@ class OHL:
         self.B = np.array([])
         self.phi = np.array([])
 
-    def get_brans_nodes_list(self, segment_num):
+    def get_brans_nodes_splited_list(self, segment_num):
         """
         【函数功能】 获取切分后支路列表与节点列表
         【入参】
@@ -74,7 +75,7 @@ class OHL:
         else:
             for i in range(segment_num):
                 for j in range(len(brans_name)):
-                    self.wires_name.append(f"{brans_name[j]}_Splited_{i+1}")
+                    self.wires_name.append(f"{brans_name[j]}_Splited_{i + 1}")
 
                 self.nodes_name.extend(start_nodes_name)
                 for j in range(len(start_nodes_name)):
@@ -82,7 +83,3 @@ class OHL:
 
             # 最后一个分段，则将终止节点加入列表
             self.nodes_name.extend(end_nodes_name)
-
-
-
-

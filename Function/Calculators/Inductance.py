@@ -497,7 +497,7 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
     # (2b) with ground
     # L and P matrices for aai,ggi
 
-    if ground.gnd_model != "No":
+    if ground.gnd_mode != 0:
         pf1 = start_points.copy()
         pf1[:, 2] = -pf1[:, 2]  # image for air segments
         pf2 = end_points.copy()
@@ -525,12 +525,12 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
         Pgi = calculate_potential(start_points[rb2, :], end_points[rb2, :], lengths[rb2, 0], radii[rb2, 0], pf1[rb2, :], pf2[rb2, :], lengths[rb2, 0], radii[rb2, 0], At[rb2, :]-Nnas, Nng) if Nng != 0 else 0
 
     # (2bi) perfect ground
-    if ground.gnd_model == "Perfect":
+    if ground.gnd_mode == 1:
         L0 = L0 - Lai * (x_consines * np.transpose(x_consines) + y_consines * np.transpose(y_consines) + z_consines * np.transpose(z_consines))
         P0 = P0 - Pai
 
     # (2bii) lossy ground model
-    elif ground.gnd_model == "Lossy":
+    elif ground.gnd_mode == 2:
         Lag = Lout[rb1, :]
         Lag = np.copy(Lag[:, rb2])
         Lga = Lout[rb2, :]
@@ -572,7 +572,7 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
     return L0, P0
 
 
-def calculate_OHL_mutual_inductance(radius, height, offset, mu0):
+def calculate_OHL_mutual_inductance(radius, height, end_node_y, mu0):
     """
     【函数功能】架空线电感电容矩阵参数计算
     【入参】
@@ -586,7 +586,7 @@ def calculate_OHL_mutual_inductance(radius, height, offset, mu0):
     """
     km = mu0 / (2 * np.pi)
     Npha = radius.shape[0]
-    d = np.tile(offset, (1, Npha))
+    d = np.tile(end_node_y, (1, Npha))
     dij = d - d.T
     h_matrix = np.tile(height, (1, Npha))
 

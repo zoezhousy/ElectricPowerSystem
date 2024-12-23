@@ -10,7 +10,9 @@ import json
 import pandas as pd
 if __name__ == '__main__':
     # 1. 接收到创建新电网指令
-    file_name = "01_8"
+    file_name = "01_8_ye"
+    #file_name = "case2_linear/Assessment_18_1213_Yeung(withRL)"
+    #file_name = "case3_nonlinear/nonlinear"
     json_file_path = "Data/input/" + file_name + ".json"
     # 0. read json file
     with open(json_file_path, 'r', encoding="utf-8") as j:
@@ -18,10 +20,21 @@ if __name__ == '__main__':
     varied_frequency = np.arange(0, 37, 9)
     network = Network()
     #change = Strategy.Change_DE_max()
-    strategy = Strategy.variant_frequency()
-    network.run(load_dict,strategy)
+    #strategy = Strategy.variant_frequency()
+    #network.run(load_dict,change)
     #network.run_individual(load_dict)
     #pd.DataFrame(network.run_measure()).to_csv("Data/Output/"+file_name+"_output.csv")
+
+    calculation = load_dict["Global"]["Calculation_Model"]
+    # 基础模块
+    if calculation == 0:
+        network.run_base(load_dict)
+    # 灵敏度分析模块
+    elif calculation == 1:
+        network.run_base(load_dict)
+        network.sensitive_analysis(load_dict)
+    elif calculation == 2:
+        network.run_MC(load_dict)
 
 
     # 二、灵敏度分析模块

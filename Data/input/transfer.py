@@ -185,7 +185,7 @@ combined_data = {
 json_data = json.dumps(combined_data, ensure_ascii=False, indent=4)
 
 # 将JSON数据写入文件
-json_file = 'output.json'  # 替换为你想要保存的JSON文件路径
+json_file = 'output_big.json'  # 替换为你想要保存的JSON文件路径
 with open(json_file, 'w', encoding='utf-8') as f:
     f.write(json_data)
 

@@ -140,6 +140,43 @@ class MC_Data_Gene():
                     TowerSW[ik] = 1
                     break
 
+        # # 调用初始化函数
+        # Line = self.Line_Init()
+        # # struct获取每个变量名
+        # Suppose_OHLP = Line.Suppose_OHLP
+        # SWnumber = Line.SWnumber
+        #
+        # # 增强多样性, 第1条边没有sw，第2条边2根sw，第3条边pc有1相
+        # Suppose_test = Suppose_OHLP[0, 0]
+        # Suppose_test = np.delete(Suppose_test, 1, axis=0)
+        # Suppose_OHLP[0, 0] = Suppose_test
+        # SWnumber[0, 0] = 0
+        # Suppose_test = Suppose_OHLP[1, 0]
+        # Suppose_test3 = np.zeros((Suppose_test.shape[0] + 1, Suppose_test.shape[1]))
+        # Suppose_test3[0: 2, :] = Suppose_test[0: 2, :]
+        # Suppose_test3[2, :] = Suppose_test[1, :]
+        # Suppose_test3[2, 0: 2] = Suppose_test[1, 0: 2] + 10
+        # Suppose_test3[2, 3: 5] = Suppose_test[1, 3: 5] + 10
+        # Suppose_test3[2, 7] = 2001
+        # Suppose_test3[3, :] = Suppose_test[2, :]
+        # Suppose_test3[4, :] = Suppose_test[3, :]
+        # Suppose_test3[5, :] = Suppose_test[4, :]
+        # Suppose_OHLP[1, 0] = Suppose_test3
+        # SWnumber[0, 1] = 2
+        # Suppose_test = Suppose_OHLP[2, 0]
+        # Suppose_test[2, 1] = 0.5
+        # Suppose_test[2, 4] = 0.5
+        # Suppose_test[2, 6] = -0.5
+        # Suppose_OHLP[2, 0] = Suppose_test
+
+        # pole位置坐标
+        # polexyall2 = []
+        # for pw in range(len(Line['Suppose_OHLP'])):
+        #     Suppose_OHLPe = Line['Suppose_OHLP'][pw]
+        #     polexyall2.append(Suppose_OHLPe[0, :6])
+        #
+        # polexyall = np.array(polexyall2)
+
 
         # 输入斜坡的位置和坡度和高度；building左下角的位置和长，宽，高！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
         Line['Slope_angle'] = np.array([[10,20],[20,30],[30,40]])  # 每条span的斜坡角度[上（左），下（右）各一个角度（度数）]，斜坡起点是最初的落雷点位置到最近的pole-pole线的垂足点
@@ -174,16 +211,6 @@ class MC_Data_Gene():
         # 函数
         Line['Node'] = Line['Node_all'][:, 1: 3]
         Line['Edges'] = Line['Edge_all'][:, 1: 3]
-
-        Line['Suppose_OHLP'][0][1,2] = 9
-        Line['Suppose_OHLP'][0][1, 5] = 9
-        Line['Suppose_OHLP'][1][1, 2] = 9
-        Line['Suppose_OHLP'][1][1, 5] = 9
-        Line['Suppose_OHLP'][2][1, 2] = 9
-        Line['Suppose_OHLP'][2][1, 5] = 9
-
-
-
 
         # 给定节点的坐标，边的连接情况和包围线的距离确定包围线
         [resultedge, XY_need3] = edge_image(Line, DSave, LatDis_max, foldname)

@@ -35,7 +35,6 @@ This program is based off FRPY.m functions from [4]. From [4],
 
 import numpy as np
 import scipy.linalg as LA
-import numba
 
 from Vector_Fitting.Calculators.quadprog import quadprog
 from Vector_Fitting.Calculators.fitcalc import fitcalcPRE
@@ -361,7 +360,6 @@ def fill_in_bigA(N, bigV, Nc, sk, cindex, SERA, weight, Dflag, Eflag, VD, invVD,
     return bigA, bigA2
 
 
-@numba.jit(nopython=True)
 def create_Mmat_from_VD_invVD(Nc, VD, invVD, weight, Mmat, offs):
     for eigenverdi in range(Nc):
         gamm = (VD[:, eigenverdi]).reshape(-1, 1) @ (invVD[eigenverdi, :]).reshape(1, -1)

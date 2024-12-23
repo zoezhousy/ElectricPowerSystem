@@ -10,8 +10,10 @@ from Utils.Math import Bessel_IK, Bessel_K2
 
 frq_default = np.logspace(0, 9, 37)
 
+
 def calculate_coreWires_impedance(core_wires_r, core_wires_offset, core_wires_angle, core_wires_mur,
-                                  core_wires_sig, core_wires_epr, sheath_mur, sheath_sig, sheath_epr, sheath_inner_radius, Frq, constants):
+                                  core_wires_sig, core_wires_epr, sheath_mur, sheath_sig, sheath_epr,
+                                  sheath_inner_radius, Frq, constants):
     """
     【函数功能】芯线阻抗计算
     【入参】
@@ -46,7 +48,7 @@ def calculate_coreWires_impedance(core_wires_r, core_wires_offset, core_wires_an
     # low = np.where(np.real(Rc) <= Besl_Max)
     # Zc_diag[low] = kc[low] * besseli(0, Rc[low]) / besseli(1, Rc[low])
 
-###################################
+    ###################################
     # Mu_s = mu0 * sheath_mur
     # gamma_s = np.sqrt(1j * Mu_s * omega * (sheath_sig + 1j * omega * ep0* sheath_epr))
     # Rsa = sheath_inner_radius * gamma_s
@@ -85,7 +87,9 @@ def calculate_coreWires_impedance(core_wires_r, core_wires_offset, core_wires_an
 
     return Zc_diag
 
-def calculate_round_wires_internal_impedance(core_wires_r, core_wires_mur, core_wires_sig, core_wires_epr, frq, constants):
+
+def calculate_round_wires_internal_impedance(core_wires_r, core_wires_mur, core_wires_sig, core_wires_epr, frq,
+                                             constants):
     """
     【函数功能】圆线内阻抗计算
     【入参】
@@ -107,7 +111,9 @@ def calculate_round_wires_internal_impedance(core_wires_r, core_wires_mur, core_
     Zc_diag = 1j * omega * Mu_c / (2 * np.pi * Rc) * besseli(0, Rc) / besseli(1, Rc)
     return Zc_diag
 
-def calculate_inductance_of_round_wires_inside_sheath(core_wires_r, core_wires_offset, core_wires_angle, sheath_inner_radius, constants):
+
+def calculate_inductance_of_round_wires_inside_sheath(core_wires_r, core_wires_offset, core_wires_angle,
+                                                      sheath_inner_radius, constants):
     """
     【函数功能】套管内的圆线电感计算
     【入参】
@@ -127,12 +133,16 @@ def calculate_inductance_of_round_wires_inside_sheath(core_wires_r, core_wires_o
     ks = mu0 / (2 * np.pi)
 
     dj = np.tile(core_wires_offset, (1, Npha))
-    L = ks * np.log(dj.T/sheath_inner_radius*np.sqrt((didk**2+sheath_inner_radius**4-2*didk*sheath_inner_radius**2*np.cos(angle))/(didk**2+dj.T**4-2*didk*dj.T**2*np.cos(angle))))
-    L_diag = ks * np.log(sheath_inner_radius/core_wires_r*(1-(core_wires_offset/sheath_inner_radius)**2))
+    L = ks * np.log(dj.T / sheath_inner_radius * np.sqrt(
+        (didk ** 2 + sheath_inner_radius ** 4 - 2 * didk * sheath_inner_radius ** 2 * np.cos(angle)) / (
+                    didk ** 2 + dj.T ** 4 - 2 * didk * dj.T ** 2 * np.cos(angle))))
+    L_diag = ks * np.log(sheath_inner_radius / core_wires_r * (1 - (core_wires_offset / sheath_inner_radius) ** 2))
     np.fill_diagonal(L, L_diag)
     return L
 
-def calculate_sheath_internal_impedance(sheath_mur, sheath_sig, sheath_epr, sheath_inner_radius, sheath_r, frq, constants):
+
+def calculate_sheath_internal_impedance(sheath_mur, sheath_sig, sheath_epr, sheath_inner_radius, sheath_r, frq,
+                                        constants):
     """
     【函数功能】套管内的圆线电感计算
     【入参】
@@ -150,16 +160,17 @@ def calculate_sheath_internal_impedance(sheath_mur, sheath_sig, sheath_epr, shea
     omega = 2 * np.pi * frq
 
     Mu_s = mu0 * sheath_mur
-    gamma_s = np.sqrt(1j * Mu_s * omega * (sheath_sig + 1j * omega * ep0* sheath_epr))
+    gamma_s = np.sqrt(1j * Mu_s * omega * (sheath_sig + 1j * omega * ep0 * sheath_epr))
     Rsa = sheath_inner_radius * gamma_s
     Rsb = sheath_r * gamma_s
 
     Zinternal = gamma_s / 2 / np.pi / sheath_sig / sheath_inner_radius * (
-                besseli(0, Rsa) * besselk(1, Rsb) + besseli(1, Rsb) * besselk(0, Rsa)) / (
-                      besseli(1, Rsb) * besselk(1, Rsa) - besseli(1, Rsa) * besselk(1, Rsb))
+            besseli(0, Rsa) * besselk(1, Rsb) + besseli(1, Rsb) * besselk(0, Rsa)) / (
+                        besseli(1, Rsb) * besselk(1, Rsa) - besseli(1, Rsa) * besselk(1, Rsb))
     return Zinternal
 
-def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, outer_radius, Frq,constants):
+
+def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, outer_radius, Frq, constants):
     """
     【函数功能】套管阻抗计算
     【入参】
@@ -199,14 +210,15 @@ def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, shea
     Ns = np.array([sheath_sig]).reshape(-1).shape[0]
     Zs = np.zeros((Ns, 1, Nf), dtype='complex')
     for ik in range(Nf):
-        Zs[:, 0, ik] = Zs_diag[ik] + ks[ik] * Rsb * np.log(outer_radius/sheath_r)
+        Zs[:, 0, ik] = Zs_diag[ik] + ks[ik] * Rsb * np.log(outer_radius / sheath_r)
     # process the data, because the Z matrix is 3-dimensional matrix, but when fre is a float, we need Z is a 2-dimensional array
     # if isinstance(Frq, float):
     #     Zs = np.squeeze(Zs)
     return Zs
 
 
-def calculate_multual_impedance(core_wires_r, sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, sheath_epr, Frq, constants):
+def calculate_multual_impedance(core_wires_r, sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, sheath_epr, Frq,
+                                constants):
     """
     【函数功能】互阻抗计算
     【入参】
@@ -227,7 +239,7 @@ def calculate_multual_impedance(core_wires_r, sheath_mur, sheath_sig, sheath_inn
     # Npha 表示芯线数量
     Npha = core_wires_r.shape[0]
     Mu_s = mu0 * sheath_mur
-    Epr_s = ep0*sheath_epr
+    Epr_s = ep0 * sheath_epr
     Nf = frq.size
     omega = 2 * np.pi * frq
     gamma_s = np.sqrt(1j * Mu_s * omega * (sheath_sig + 1j * omega * Epr_s))

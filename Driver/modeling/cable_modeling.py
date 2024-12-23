@@ -10,6 +10,7 @@ from Function.Calculators.Inductance import calculate_coreWires_inductance, calc
 from Model.Contant import Constant
 from Vector_Fitting.Drivers.MatrixFitting import matrix_vector_fitting
 from Driver.modeling_varient_freqency.recursive_convolution import preparing_parameters
+from Utils.Matrix import repet_block_diag
 
 
 def build_incidence_matrix(cable):
@@ -236,7 +237,7 @@ def calculate_cable_inductance(Lin, Lcs, Lsc, Npha):
     L = Ld + Lx + Lss
     return L
 
-def prepare_building_parameters(cable, Lc, Ls, ground, frequency, constants):
+def prepare_building_parameters(cable, ground, frequency, constants):
     tube_wire = cable.wires.tube_wires[0]
     Npha = tube_wire.inner_num
 
@@ -248,8 +249,7 @@ def prepare_building_parameters(cable, Lc, Ls, ground, frequency, constants):
 
     Zg = calculate_ground_impedance(ground.mur, ground.epr, ground.sig,
                                      tube_wire.get_coreWires_endNodeZ(), tube_wire.outer_radius,
-                                     np.zeros((Npha, 1)), frequency,
-                                     constants)
+                                     np.zeros((Npha, 1)), frequency, constants)
     Zg = Zg.squeeze(-1)
 
     Zin = np.block([[Zs + Zg, Zsc], [Zcs, Zc]])
@@ -288,24 +288,7 @@ def calculate_cable_capcitance(core_wires_r, core_wires_offset, core_wires_angle
 
     return np.linalg.inv(P)
 
-
-def cable_building(cable, ground, frequency):
-    print("cable------------------------------------------------")
-    print("cableCable building...")
-    # 0.参数准备
-    constants = Constant()
-    tube_wire = cable.wires.tube_wires[0]
-
-    Lc = calculate_inductance_of_round_wires_inside_sheath(tube_wire.get_coreWires_radii(),
-                                                           tube_wire.get_coreWires_innerOffset(),
-                                                           tube_wire.get_coreWires_innerAngle(),
-                                                           tube_wire.inner_radius, constants)
-
-    Ls = calculate_sheath_inductance(tube_wire.get_coreWires_endNodeZ(), tube_wire.sheath.r,
-                                     tube_wire.outer_radius, constants)
-
-    R, L, C = prepare_building_parameters(cable, Lc, Ls, ground, frequency, constants)
-
+def build_cable_parameter_matrixs(cable, R, C, L):
     # 1. 构建A矩阵
     build_incidence_matrix(cable)
 
@@ -326,32 +309,50 @@ def cable_building(cable, ground, frequency):
 
     build_voltage_source_matrix(cable, 0)
 
+
+def cable_building(cable, ground, frequency):
+    print("cable------------------------------------------------")
+    print("cableCable building...")
+    # 0.参数准备
+    constants = Constant()
+
+    R, L, C = prepare_building_parameters(cable, ground, frequency, constants)
+
+    build_cable_parameter_matrixs(cable, R, C, L)
+
     print("cableCable building is completed.")
     print("cable------------------------------------------------")
 
 
-def prepare_variant_frequency_parameters(cable, Lc, Ls, varied_frequency, Nfit, ground, dt, constants):
+def prepare_variant_frequency_parameters(cable, varied_frequency, f0, Nfit, ground, dt, constants):
     tube_wire = cable.wires.tube_wires[0]
     length = cable.wires.tube_wires[0].sheath.length()
     Npha = tube_wire.inner_num
     Nf = varied_frequency.size
 
-    if cable.info.mode_con == 1:
+    capcitance = calculate_cable_capcitance(tube_wire.get_coreWires_radii(), tube_wire.get_coreWires_innerOffset(),
+                                       tube_wire.get_coreWires_innerAngle(),
+                                       tube_wire.inner_radius, tube_wire.outer_radius, tube_wire.sheath.r, constants)
+
+    if cable.info.con_mode == 1:
         Zgf = calculate_ground_impedance(ground.mur, ground.epr, ground.sig,
                                          tube_wire.get_coreWires_endNodeZ(), tube_wire.outer_radius,
                                          np.zeros((Npha, 1)), varied_frequency,
-                                         constants) if cable.info.mode_gnd == 2 else 0
-        Zcf = calculate_coreWires_impedance(tube_wire.get_coreWires_radii(),
-                                            tube_wire.get_coreWires_innerOffset(),
-                                            tube_wire.get_coreWires_innerAngle(), tube_wire.get_coreWires_mur(),
-                                            tube_wire.get_coreWires_sig(), tube_wire.sheath.mur,
-                                            tube_wire.sheath.sig, tube_wire.inner_radius, varied_frequency,
-                                            constants)
-        Zsf = calculate_sheath_impedance(tube_wire.sheath.mur, tube_wire.sheath.sig, tube_wire.inner_radius,
-                                         tube_wire.sheath.r, varied_frequency, constants)
-        Zcsf, Zscf = calculate_multual_impedance(tube_wire.get_coreWires_radii(), tube_wire.sheath.mur,
-                                                 tube_wire.sheath.sig, tube_wire.inner_radius,
-                                                 tube_wire.sheath.r, varied_frequency, constants)
+                                         constants) if ground.gnd_mode == 2 else 0
+
+        Zcf, Zsf, Zcsf, Zscf = build_core_sheath_merged_impedance_matrix(tube_wire, varied_frequency, constants)
+
+        # Zcf = calculate_coreWires_impedance(tube_wire.get_coreWires_radii(),
+        #                                     tube_wire.get_coreWires_innerOffset(),
+        #                                     tube_wire.get_coreWires_innerAngle(), tube_wire.get_coreWires_mur(),
+        #                                     tube_wire.get_coreWires_sig(), tube_wire.sheath.mur,
+        #                                     tube_wire.sheath.sig, tube_wire.inner_radius, varied_frequency,
+        #                                     constants)
+        # Zsf = calculate_sheath_impedance(tube_wire.sheath.mur, tube_wire.sheath.sig, tube_wire.inner_radius,
+        #                                  tube_wire.sheath.r, varied_frequency, constants)
+        # Zcsf, Zscf = calculate_multual_impedance(tube_wire.get_coreWires_radii(), tube_wire.sheath.mur,
+        #                                          tube_wire.sheath.sig, tube_wire.inner_radius,
+        #                                          tube_wire.sheath.r, varied_frequency, constants)
         Zssf = Zsf + Zgf
 
         Zss = Zssf[0, 0, :]
@@ -365,9 +366,13 @@ def prepare_variant_frequency_parameters(cable, Lc, Ls, varied_frequency, Nfit, 
 
         SER = matrix_vector_fitting(Z, varied_frequency)
         A, B = preparing_parameters(SER, dt)
-        resistance = SER['D'] + cable.A.sum(-1)
-        inductance = SER['E'] + sp.linalg.block_diag(Ls, Lc)
-    elif cable.info.mode_gnd == 2:
+
+        B = np.tile(B, (Npha + 1, 1))
+
+        resistance = SER['D']
+        # inductance = SER['E'] + sp.linalg.block_diag(Ls, Lc)
+        inductance = SER['E']
+    elif ground.gnd_mode == 2:
         Zgf = calculate_ground_impedance(ground.mur, ground.epr, ground.sig,
                                          tube_wire.get_coreWires_endNodeZ(), tube_wire.outer_radius,
                                          np.zeros((Npha, 1)), varied_frequency, constants)
@@ -376,56 +381,68 @@ def prepare_variant_frequency_parameters(cable, Lc, Ls, varied_frequency, Nfit, 
         SER['D'] = np.tile(SER['D'], (Npha+1, Npha+1, 1))
 
         A, B = preparing_parameters(SER, dt)
+        B = np.tile(B, (Npha + 1, 1))
         A = np.tile(A, (Npha+1, Npha+1, 1))
-        R, L = prepare_building_parameters(cable, Lc, Ls, 2e4, constants)
-        resistance = SER['D'] + cable.A.sum(-1) + R
+        R, L, capcitance = prepare_building_parameters(cable, ground, f0, constants)
+        resistance = SER['D'] + R
         inductance = SER['E'] + L
     else:
         raise Exception('Conductor model and ground model of Cable are not variant frequency, since variant frequency model have used.')
 
-    cable.phi = np.zeros((len(cable.wires_name), 1, Nfit))
-
-    cable.A = A * length
+    cable.A = A
 
     cable.B = B
 
-    return resistance, inductance
+    return resistance, inductance, capcitance
 
-def cable_building_variant_frequency(cable, ground, varied_frequency, dt, Nfit=9):
+def cable_building_variant_frequency(cable, ground, varied_frequency, f0, dt, Nfit=9):
     print("cable------------------------------------------------")
     print("cableCable building...")
     # 0.参数准备
     constants = Constant()
     tube_wire = cable.wires.tube_wires[0]
 
-    Lc = calculate_inductance_of_round_wires_inside_sheath(tube_wire.get_coreWires_radii(),
-                                                           tube_wire.get_coreWires_innerOffset(),
-                                                           tube_wire.get_coreWires_innerAngle(),
-                                                           tube_wire.inner_radius, constants)
+    # Lc = calculate_inductance_of_round_wires_inside_sheath(tube_wire.get_coreWires_radii(),
+    #                                                        tube_wire.get_coreWires_innerOffset(),
+    #                                                        tube_wire.get_coreWires_innerAngle(),
+    #                                                        tube_wire.inner_radius, constants)
+    #
+    # Ls = calculate_sheath_inductance(tube_wire.get_coreWires_endNodeZ(), tube_wire.sheath.r,
+    #                                  tube_wire.outer_radius, constants)
 
-    Ls = calculate_sheath_inductance(tube_wire.get_coreWires_endNodeZ(), tube_wire.sheath.r,
-                                     tube_wire.outer_radius, constants)
+    R, L, C = prepare_variant_frequency_parameters(cable, varied_frequency, f0, Nfit, ground, dt, constants)
 
-    R, L = prepare_variant_frequency_parameters(cable, Lc, Ls, varied_frequency, Nfit, ground, dt, constants)
+    R += cable.A.sum(-1)
 
-    # 1. 构建A矩阵
-    build_incidence_matrix(cable)
+    length = cable.wires.tube_wires[0].sheath.length()
+    cable.A = cable.A * length
 
-    # 4. 构建C矩阵
-    build_capacitance_matrix(cable, Lc, Ls, constants)
+    build_cable_parameter_matrixs(cable, R, C, L)
 
-    # 5. 构建G矩阵
-    build_conductance_matrix(cable)
+    print("cableCable building is completed.")
+    print("cable------------------------------------------------")
 
-    # 2. 构建R矩阵
-    build_resistance_matrix(cable, R)
 
-    # 3. 构建L矩阵
-    build_inductance_matrix(cable, L)
+def cable_building_hybrid_variant_frequency(cable, ground, varied_frequency, f0, dt, Nfit=9):
+    print("cable------------------------------------------------")
+    print("cableCable building...")
+    # 0.参数准备
+    constants = Constant()
 
-    build_current_source_matrix(cable, 0)
+    R, L, C = prepare_variant_frequency_parameters(cable, varied_frequency, f0, Nfit, ground, dt, constants)
 
-    build_voltage_source_matrix(cable, 0)
+    R += cable.A.sum(-1)
+
+    length = cable.wires.tube_wires[0].sheath.length()
+    segment_num = len(cable.wires.tube_wires)
+
+    cable.A = repet_block_diag(cable.A * length, segment_num)
+
+    # cable.A = cable.A.transpose(0, 2, 1)
+
+    cable.B = np.tile(cable.B, (segment_num, 1))
+
+    build_cable_parameter_matrixs(cable, R, C, L)
 
     print("cableCable building is completed.")
     print("cable------------------------------------------------")

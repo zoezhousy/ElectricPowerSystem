@@ -798,6 +798,21 @@ class Wires:
             offsets.append([wire.sheath.offset])
         return np.array(offsets)
 
+    def get_end_node_y(self):
+        """
+        返回线段偏置矩阵,按照air、ground、a2g、short的顺序。
+
+        返回:
+        offsets (numpy.narray, n*1): n条线段的偏置
+        """
+        end_node_y = []
+        for i, wire in enumerate(self.air_wires + self.ground_wires + self.a2g_wires + self.short_wires):
+            end_node_y.append([wire.end_node.y])
+
+        for wire in self.tube_wires:
+            end_node_y.append([wire.sheath.end_node.y])
+        return np.array(end_node_y)
+
 
     def get_lengths(self):
         """

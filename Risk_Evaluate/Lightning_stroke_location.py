@@ -200,8 +200,8 @@ def Lightning_stroke_location(Line, resultcur, DSave, foldname, resultedge,AR):
                 stroke_r.append(dc)  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 if sc <= dc:
                     stroke_distance.append(sc)  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    stroke_position.append(["Direct", "phase conductor", circlep[i][0, 0], span_npa[i][0, 0]],
-                                           conductor[0, 0])
+                    stroke_position.append(["Direct", "phase conductor", circlep[i][0], span_npa[i][0],
+                                           conductor[0, 0]])
                     stroke_point.append(np.array([C, D]))
                 else:
                     stroke_distance.append(np.nan)  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -324,7 +324,7 @@ def Lightning_stroke_location(Line, resultcur, DSave, foldname, resultedge,AR):
                 stroke_1 = np.array([[yg, dg], [yc, dc]])  # sw;pc唯一1相
                 sc = point_to_line_distance(C, D, P)  # 判断点到pc唯一1相的距离
                 stroke_2 = [["Direct", "shield wire", circles[i][0], sw_npa[i][0], 1],
-                            ["Direct", "phase conductor", circlep[i][0, 0], span_npa[i][0, 0], conductor[0, 0]]]
+                            ["Direct", "phase conductor", circlep[i][0], span_npa[i][0], conductor[0, 0]]]
                 # 谁高谁先判断-stroke_1 stroke_3 sall_points
                 indices = np.argsort(-stroke_1[:, 0])
                 stroke_1 = stroke_1[indices, :]
@@ -537,7 +537,7 @@ def Lightning_stroke_location(Line, resultcur, DSave, foldname, resultedge,AR):
                 # stroke_2是雷击点的位置名称-span_npa
                 stroke_2 = [["Direct", "shield wire", circles[i][0], sw_npa[i][0], 1],
                             ["Direct", "shield wire", circles[i][1], sw_npa[i][1], 2],  # sw的第1根,sw的第2根
-                            ["Direct", "phase conductor", circlep[i][0, 0], span_npa[i][0, 0],
+                            ["Direct", "phase conductor", circlep[i][0], span_npa[i][0],
                              conductor[0, 0]]]  # pc唯一1相
                 # 谁高谁先判断-stroke_1 stroke_3 sall_points
                 indices = np.argsort(-stroke_1[:, 0])
