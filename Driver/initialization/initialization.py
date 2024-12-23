@@ -173,12 +173,15 @@ def initialize_tower(tower_dict, max_length, dt, T, VF):
 def initialize_OHL(OHL_dict, max_length):
     # 1. initialize wires
     wires = Wires()
+    OHL_info = OHL_dict['Info']
     for wire in OHL_dict['Wire']:
         #  initialize air wire
         wire_air = initialize_OHL_wire(wire)
+        wire_air.name = wire_air.name+"_"+OHL_info['name']
         wire_air.start_node.x = wire_air.start_node.x + OHL_dict['Info']['Tower_head_pos'][0]
         wire_air.start_node.y = wire_air.start_node.y + OHL_dict['Info']['Tower_head_pos'][1]
         wire_air.start_node.z = wire_air.start_node.z + OHL_dict['Info']['Tower_head_pos'][2]
+
 
         wire_air.end_node.x = wire_air.end_node.x + OHL_dict['Info']['Tower_tail_pos'][0]
         wire_air.end_node.y = wire_air.end_node.y + OHL_dict['Info']['Tower_tail_pos'][1]
@@ -192,7 +195,7 @@ def initialize_OHL(OHL_dict, max_length):
     ground_dic = OHL_dict['ground']
     ground = initialize_ground(ground_dic)
     # 3. initialize info
-    OHL_info = OHL_dict['Info']
+   # OHL_info = OHL_dict['Info']
     info = OHLInfo(OHL_info['name'], OHL_info['id'], OHL_info['type'], OHL_info['dL'], OHL_info['con_mode'],
                    OHL_info['Tower_head'], OHL_info['Tower_head_id'], OHL_info['Tower_head_pos'],
                    OHL_info['Tower_tail'], OHL_info['Tower_tail_id'], OHL_info['Tower_tail_pos'])

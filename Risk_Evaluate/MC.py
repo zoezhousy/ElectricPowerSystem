@@ -13,6 +13,7 @@ import pandas as pd
 from Model.Lightning import Stroke,Lightning,Channel
 import math
 import copy
+import sys
 # network = pickle.load(open('../Data/output/network.pkl', 'rb'))
 # print(network.dt)
 
@@ -101,16 +102,38 @@ def run_MC(network,load_dict):
     # with open(json_file_path, 'r', encoding="utf-8") as j:
     #     load_dict = json.load(j)
 
+    # 判断横着的线长度是否大于等于1000m 找到x轴最中间的pointmdm的两个点
+    Coordinates = Line['Node']
+    y_zero_points = Coordinates[Coordinates[:, 1] == 0]  # 找到 y 坐标为 0 的点
+    x_max_point = y_zero_points[np.argmax(y_zero_points[:, 0])]  # 找出 x 最大的点
+    x_min_point = y_zero_points[np.argmin(y_zero_points[:, 0])]  # 找出 x 最最小的点
+    x_max = x_max_point[0]  # 计算 x 坐标的差值
+    x_min = x_min_point[0]
+    x_diff = x_max - x_min
+    MC_lgtn = load_dict["MC"]["MC_lgtn"]
+    casemodel = MC_lgtn['casemodel']  # 选择模式 1-一般情况 非1-特定情况
+    pointmd = MC_lgtn['pointmd']  # x轴最中间pointmd距离的两个点
+    # 如果长度小于1000m，显示警告并只能操作一般模式
+    if casemodel !=1 and x_diff < 1000:
+        print(
+            "Error: Length is less than 1000m, cannot partition and extract indirect lightning data. Exiting the program.")
+        sys.exit()
+    else :
+        num_points = int(x_diff // pointmd)  # 按 pointmd 米间隔分段
+        if num_points ==0:
+            MC_lgtn['mid_points'] = np.array([[x_min, 0], [x_max, 0]])
+        else:
+            x_values = np.linspace(x_min, x_max, num_points + 1)  # 计算分段的 x 坐标
+            mid_index = num_points // 2  # 获取中间部分的两个点
+            MC_lgtn['mid_points'] = np.array([[x_values[mid_index], 0], [x_values[mid_index + 1], 0]])
 
     DSave = load_dict["MC"]["DSave"]
-    MC_lgtn = load_dict["MC"]["MC_lgtn"]
     AR = load_dict["MC"]["AR"]
-    surrounding_distance = 100
+    surrounding_distance =  load_dict["MC"]["surrounding_distance"]
     foldname = "Data/output"
     Wave_Model = 1
     # 1. 画范围框
     [resultedge, XY_need3] = edge_image(Line, DSave, surrounding_distance, foldname)
-
 
     # 2. number of flashes and number of strokes
     [resultcur, parameterst, flash_stroke, points_need] = lighting_parameters_distribution(MC_lgtn, DSave, Line,
@@ -127,109 +150,23 @@ def run_MC(network,load_dict):
     DIND2 = DINDs[resultcur['siteone']]
     flash_stroke = np.hstack((flash_stroke, DIND2.reshape(-1, 1)))
 
-    Dymax = MC_lgtn['Dymax']  # 最大距离
-    Dyp = MC_lgtn["Dyp"]  # 分区距离
-    pointmd = MC_lgtn["pointmd"]  # x轴最中间pointmd距离的两个点
-    casemodel = MC_lgtn['casemodel']  # 选择模式 1-一般情况 非1-特定情况
-    Coordinates = Line['Node']
-    # 找到x轴最中间的pointmdm的两个点
-    y_zero_points = Coordinates[Coordinates[:, 1] == 0]  # 找到 y 坐标为 0 的点
-    x_max_point = y_zero_points[np.argmax(y_zero_points[:, 0])]  # 找出 x 最大的点
-    x_min_point = y_zero_points[np.argmin(y_zero_points[:, 0])]  # 找出 x 最最小的点
-    x_max = x_max_point[0]  # 计算 x 坐标的差值
-    x_min = x_min_point[0]
-    x_diff = x_max - x_min
-    num_points = int(x_diff // pointmd)  # 按 pointmd 米间隔分段
-    x_values = np.linspace(x_min, x_max, num_points + 1)  # 计算分段的 x 坐标
-    mid_index = num_points // 2  # 获取中间部分的两个点
-    mid_points = 0
-    if num_points ==0:
-        mid_points = np.array([[x_min,0], [x_max,0]])
-    else:
-        mid_points = np.array([[x_values[mid_index], 0], [x_values[mid_index + 1], 0]])
-    # 获取 x轴最中间的pointmdm和Y轴正半轴的点
-    filtered_points = []
-    filtered_indices = []
-    for idx, point in enumerate(stroke_result[7]):
-        x, y = point
-        if mid_points[0, 0] <= x <= mid_points[1, 0] and y >= 0:
-            filtered_points.append(point)
-            filtered_indices.append(idx)
-
-    filtered_indices_ind = []
-    filtered_indices_d = []
-    for idx in filtered_indices:
-        if stroke_result[0][idx] == 'Indirect':
-            filtered_indices_ind.append(idx)
-        elif stroke_result[0][idx] == 'Direct':
-            filtered_indices_d.append(idx)
-    df27 = []
-    parameterst_list = []
-    stroke_result_list = []
+   # 一般情况，直接输出间接雷数据和直接雷数据
     if casemodel == 1:
-        # 间接雷数据和直接雷数据按照x轴最中间的pointmdm和Y轴正半轴（离x轴的距离）分区
-        # 对于间接雷数据和直接雷数据
-        num_zones = Dymax // Dyp  # 计算区间数量
-        filtered_indices_indall = [[] for _ in range(num_zones)]
-        for idx in filtered_indices:
-            y_coord = stroke_result[7][idx][1]  # 获取 y 坐标
-            zone_index = int(y_coord // Dyp)  # 计算 y 坐标所在的区间（区间索引）
-            if zone_index < num_zones:  # 防止越界
-                filtered_indices_indall[zone_index].append(idx)
+        # 将double 数组转换为table
+        df27 = pd.DataFrame(flash_stroke, columns=['flash', 'stroke', 'Direct1_Indirect2'])
+        return df27, parameterst, stroke_result, PoleXY
+    else: # 特定情况
+        # 间接雷数据按照Y轴正半轴（离x轴的距离）分区
+        filtered_indices_ind = []
+        for idx in range(len(stroke_result[0])):
+            if stroke_result[0][idx] == 'Indirect':
+                filtered_indices_ind.append(idx)
 
-        # 遍历每个区间
-        for i in range(len(filtered_indices_indall)):
-            indices = filtered_indices_indall[i]  # 第 i 区间的索引
-            stroke_resultindq = []
-            parameterstindq = None
-            flash_strokeindq = None
-            # 对于每个区间，从 stroke_result 中提取相应的索引数据
-            for j in range(len(stroke_result)):
-                # 获取 stroke_result 中的 jth list 和 filtered_indices_indall 中第 i 个区间的索引
-
-                stroke_resultindq.append([stroke_result[j][idx] for idx in indices])
-
-            stroke_result_list.append(stroke_resultindq)  # 使用 globals() 动态创建一个新的变量名
-            parameterstindq = parameterst[indices]
-            parameterst_list.append(parameterstindq)
-            #globals()[f"parameterstindq_{i}"] = parameterstindq
-            flash_strokeindq = flash_stroke[indices]
-            df27ind = pd.DataFrame(flash_strokeindq, columns=['flash', 'stroke', 'Direct1_Indirect2'])
-            df27.append(df27ind)
-            #globals()[f"df27indq_{i}"] = df27ind
-            # 对于直接雷数据
-            # num_zones = Dymax // Dyp  # 计算区间数量
-            # filtered_indices_dall = [[] for _ in range(num_zones)]
-            # for idx in filtered_indices_d:
-            #     y_coord = stroke_result[7][idx][1]  # 获取 y 坐标
-            #     zone_index = int(y_coord // Dyp)  # 计算 y 坐标所在的区间（区间索引）
-            #     if zone_index < num_zones:  # 防止越界
-            #         filtered_indices_dall[zone_index].append(idx)
-            #
-            # # 遍历每个区间
-            # for i in range(len(filtered_indices_dall)):
-            #     indices = filtered_indices_dall[i]  # 第 i 区间的索引
-            #     stroke_resultdq = []
-            #     parameterstdq = None
-            #     flash_strokedq = None
-            #     # 对于每个区间，从 stroke_result 中提取相应的索引数据
-            #     for j in range(len(stroke_result)):
-            #         # 获取 stroke_result 中的 jth list 和 filtered_indices_dall 中第 i 个区间的索引
-            #
-            #         stroke_resultdq.append([stroke_result[j][idx] for idx in indices])
-            #
-            #     #globals()[f"stroke_resultdq_{i}"] = stroke_resultdq  # 使用 globals() 动态创建一个新的变量名
-            #     stroke_result_list.append(stroke_resultindq)
-            #     parameterstdq = parameterst[indices]
-            #     #globals()[f"parameterstdq_{i}"] = parameterstdq
-            #     parameterst_list.append(parameterstdq)
-            #     flash_strokedq = flash_stroke[indices]
-            #     df27d = pd.DataFrame(flash_strokedq, columns=['flash', 'stroke', 'Direct1_Indirect2'])
-            #     df27.append(df27d)
-                #globals()[f"df27dq_{i}"] = df27d
-    else:
-        # 间接雷数据按照x轴最中间的pointmdm和Y轴正半轴（离x轴的距离）分区
-        # 对于间接雷数据
+        df27 = []
+        parameterst_list = []
+        stroke_result_list = []
+        Dymax = MC_lgtn['Dymax']
+        Dyp = MC_lgtn["Dyp"]
         num_zones = Dymax // Dyp  # 计算区间数量
         filtered_indices_indall = [[] for _ in range(num_zones)]
         for idx in filtered_indices_ind:
@@ -250,15 +187,14 @@ def run_MC(network,load_dict):
 
                 stroke_resultindq.append([stroke_result[j][idx] for idx in indices])
 
-            #globals()[f"stroke_resultindq_{i}"] = stroke_resultindq  # 使用 globals() 动态创建一个新的变量名
+            # globals()[f"stroke_resultindq_{i}"] = stroke_resultindq  # 使用 globals() 动态创建一个新的变量名
             stroke_result_list.append(stroke_resultindq)
             parameterstindq = parameterst[indices]
             parameterst_list.append(parameterstindq)
-            #globals()[f"parameterstindq_{i}"] = parameterstindq
+            # globals()[f"parameterstindq_{i}"] = parameterstindq
             flash_strokeindq = flash_stroke[indices]
             df27ind = pd.DataFrame(flash_strokeindq, columns=['flash', 'stroke', 'Direct1_Indirect2'])
             df27.append(df27ind)
-            #globals()[f"df27indq_{i}"] = df27ind
+            # globals()[f"df27indq_{i}"] = df27ind
 
-
-    return df27, parameterst_list, stroke_result_list,PoleXY
+        return df27, parameterst_list, stroke_result_list, PoleXY

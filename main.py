@@ -10,8 +10,8 @@ import json
 import pandas as pd
 if __name__ == '__main__':
     # 1. 接收到创建新电网指令
-    file_name = "01_8_ye"
-    #file_name = "case2_linear/Assessment_18_1213_Yeung(withRL)"
+    #file_name = "01_8_ye"
+    file_name = "case2_linear/Assessment_18_1213_Yeung(withRL)"
     #file_name = "case3_nonlinear/nonlinear"
     json_file_path = "Data/input/" + file_name + ".json"
     # 0. read json file

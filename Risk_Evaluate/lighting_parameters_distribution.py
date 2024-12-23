@@ -5,14 +5,16 @@ import os
 import pandas as pd
 from collections import Counter
 
+
 def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname):
     # 绘图
     plt.close('all')
 
     # struct获取每个变量名
-    casemodel=MC_lgtn['casemodel']
-    Nmodel = MC_lgtn['Nmodel']
-    pn = MC_lgtn['pn']
+    casemodel = MC_lgtn['casemodel']
+    mid_points = MC_lgtn['mid_points']
+    Dymax = MC_lgtn['Dymax']
+    Dyp = MC_lgtn["Dyp"]
     Ip1stmin = MC_lgtn['Ip1stmin']
     Ip1stmax = MC_lgtn['Ip1stmax']
     tf1stmin = MC_lgtn['tf1stmin']
@@ -48,10 +50,22 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
     # python特定排序从0开始
     Edges -= 1
 
+    # 画第一张图 - 杆塔图
+    # 绘制宽度=10的多边形
+    for t in range(4):
+        plt.figure()
+        for i in range(len(Edges)):
+            pt1 = Coordinates[Edges[i, 0], :]
+            pt2 = Coordinates[Edges[i, 1], :]
+            plt.plot([pt1[0], pt2[0]], [pt1[1], pt2[1]], 'k-', linewidth=2)
+        plt.scatter(Coordinates[:, 0], Coordinates[:, 1], s=50, color='k', marker='o')  # 画杆塔代表的点
+
+    # plt.show()
+
     # 不同情况对应的参数
-    # 一般情况
+    # 一般情况(N是随机的)
     sN_all = None
-    if casemodel==1:
+    if casemodel == 1:
         # fixed total number of flashes
         if mode == 1:
             flash = fixn
@@ -86,22 +100,121 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
                 elif sN_init < 1:
                     sN_init = np.array([1.])
 
-                sN_all [0, e] = sN_init[0]
+                sN_all[0, e] = sN_init[0]
 
             for e in range(flash_init):
-                stroke_sum = np.sum(sN_all [0, 0:e + 1])
+                stroke_sum = np.sum(sN_all[0, 0:e + 1])
                 if stroke_sum > fixn:
                     break
 
-            flash = e + 1
-            sN_all = sN_all [0, 0:e + 1]
+        flash = e + 1
+        sN_all = sN_all[0, 0:e + 1]
+        flash_number = np.repeat(np.arange(1, sN_all.size + 1), sN_all)  # flash_number = flash_number.reshape(-1,1).T
+        stroke_number = np.concatenate([np.arange(1, s + 1) for s in sN_all])
+        # 为第二步画最小的长方形做准备-随机形成uniform分布的点
+        # 最小的x坐标到最大的x坐标
+        xmin = np.min(XY_need3[:, 0])  # 左下角x坐标
+        xmax = np.max(XY_need3[:, 0])  # 右上角x坐标
+        ymin = np.min(XY_need3[:, 1])  # 左下角y坐标
+        ymax = np.max(XY_need3[:, 1])  # 右上角y坐标
+        # 画第2张图-杆塔图+包围线
+        plt.figure(2)
+        plt.plot(XY_need3[:, 0], XY_need3[:, 1], 'k-', linewidth=2)
+        plt.plot(XY_need3[:, 0], XY_need3[:, 1], 'r*')
+        plt.axis('equal')
+        pn = fixn * 100  # 点的数量
 
-    else: # 特定情况
+        xp = xmin + (xmax - xmin) * np.random.rand(pn, 1)  # 生成x坐标
+        yp = ymin + (ymax - ymin) * np.random.rand(pn, 1)  # 生成y坐标
 
+        # 判断随机点是否在包围线内
+        # 包围线的顶点(当多边形是封闭的，一定首尾相接)-XY_need3
+        xv = XY_need3[:, 0]
+        yv = XY_need3[:, 1]
+
+        # 如果同一个flash的第1个stroke在包围线外，去掉整个flash原本的点. 但维持flash or stroke总数不变
+        # 如果同一个flash的第1个stroke在包围线内，同一个flash的第1个stroke的点等于同一个flash所有stroke的点
+        points_need = []  # 在包围线内的点
+        firstroke = np.where(stroke_number == 1)[0]
+        ei = 0
+        while ei < len(firstroke):
+            if ei != len(firstroke) - 1:
+                fei = firstroke[ei]
+                feinext = firstroke[ei + 1]
+                # 待判断点的横坐标-xp(fei)和纵坐标-yp(fei)
+                # 判断点是否在四边形内或线上
+                # in是在四边形内，on是在四边形线上
+                in_poly = Path(list(zip(xv, yv))).contains_point((xp[ei], yp[ei]))
+                if in_poly:
+                    points_need.extend([xp[ei], yp[ei]] * (feinext - fei))
+                    ei += 1
+                else:
+                    xp = np.delete(xp, np.arange(ei, (feinext - fei + ei))).reshape(-1, 1)
+                    yp = np.delete(yp, np.arange(ei, (feinext - 1 - fei + ei))).reshape(-1, 1)
+                    ei = ei
+
+            else:
+                fei = firstroke[ei]
+                feinext = len(stroke_number) - 1
+                # 待判断点的横坐标-xp(fei)和纵坐标-yp(fei)
+                # 判断点是否在四边形内或线上
+                # in是在四边形内，on是在四边形线上
+                in_poly = Path(list(zip(xv, yv))).contains_point((xp[ei], yp[ei]))
+                if in_poly:
+                    points_need.extend([xp[ei], yp[ei]] * (feinext - fei + 1))
+                    ei += 1
+                else:
+                    xp = np.delete(xp, np.arange(ei, (feinext - fei + ei + 1))).reshape(-1, 1)
+                    yp = np.delete(yp, np.arange(ei, (feinext - fei + ei + 1))).reshape(-1, 1)
+                    ei = ei
+        points_need = np.array(points_need).reshape(-1, 2)
+    else:  # 特定情况(N固定是1)
+        # 范围是[x轴最中间pointmd距离的两个点-最大距离，Y轴正半轴]-随机形成uniform分布的点
+        points_need = []  # 要求范围内的点
+        xmin = mid_points[0, 0]  # 左下角x坐标
+        xmax = mid_points[1, 0]  # 右上角x坐标
+        ymin = 0  # 左下角y坐标
+        ymax = Dymax  # 右上角y坐标（用户输入规定的最大距离）
+        # 画第2和3张图-杆塔图+要求范围的线
+        for t in range(2, 4):
+            plt.figure(t)
+            plt.plot([xmin, xmax], [ymin, ymin], 'k-', linewidth=2)  # 底边
+            plt.plot([xmax, xmax], [ymin, ymax], 'k-', linewidth=2)  # 右边
+            plt.plot([xmax, xmin], [ymax, ymax], 'k-', linewidth=2)  # 顶边
+            plt.plot([xmin, xmin], [ymax, ymin], 'k-', linewidth=2)  # 左边
+            plt.plot(xmin, ymin, 'r*')
+            plt.plot(xmin, ymax, 'r*')
+            plt.plot(xmax, ymin, 'r*')
+            plt.plot(xmax, ymax, 'r*')
+            plt.axis('equal')
+
+        pn = MC_lgtn['pn']  # 点的密度是5000个点/每1000m
+        num_zones = Dymax // Dyp  # 计算区间数量
+        y_range = np.linspace(ymin, ymax, num_zones)  # 将y轴分区间
+        x_points = []
+        y_points = []
+        # 对于每个区间，生成相应数量的点
+        for i in range(len(y_range) - 1):
+            y = y_range[i]  # 当前区间的下限
+            y_next = y_range[i + 1]  # 当前区间的上限
+            # 计算当前y值区间内应生成的点数
+            points_for_this_y = int(pn * (y_next / 1000))  # 根据y距离调整密度
+            # 在x范围内均匀分布生成这些点
+            x_for_this_y = np.random.uniform(xmin, xmax, points_for_this_y)
+            y_for_this_y = np.random.uniform(y, y_next, points_for_this_y)  # 对应的y值
+            x_points.extend(x_for_this_y)
+            y_points.extend(y_for_this_y)
+
+        points_need = np.column_stack((x_points, y_points))
+
+        fixn = len(points_need)
         if mode == 1:
             flash = fixn
             sN_all = np.zeros((1, flash), dtype=int)
             for e in range(flash):
+                if stroke == 1:
+                    sN = np.array([1.])
+
                 sN = np.array([1.])  # number of stroke固定是1
                 sN_all[0, e] = sN[0]
 
@@ -110,85 +223,21 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
             flash_init = fixn
             sN_all = np.zeros((1, flash_init), dtype=int)
             for e in range(flash_init):
+                if stroke == 1:
+                    sN_init = np.array([1.])
+
                 sN_init = np.array([1.])  # number of stroke固定是1
-                sN_all [0, e] = sN_init[0]
+                sN_all[0, e] = sN_init[0]
 
             for e in range(flash_init):
-                stroke_sum = np.sum(sN_all [0, 0:e + 1])
+                stroke_sum = np.sum(sN_all[0, 0:e + 1])
                 if stroke_sum > fixn:
                     break
 
-
-    flash_number = np.repeat(np.arange(1, sN_all.size + 1), sN_all)  # flash_number = flash_number.reshape(-1,1).T
-    stroke_number = np.concatenate([np.arange(1, s + 1) for s in sN_all])
-
-    # 画第一张图 - 杆塔图
-    # 绘制宽度=10的多边形
-    for t in range(4):
-        plt.figure()
-        for i in range(len(Edges)):
-            pt1 = Coordinates[Edges[i, 0], :]
-            pt2 = Coordinates[Edges[i, 1], :]
-            plt.plot([pt1[0], pt2[0]], [pt1[1], pt2[1]], 'k-', linewidth=2)
-        plt.scatter(Coordinates[:, 0], Coordinates[:, 1], s=50, color='k', marker='o')  # 画杆塔代表的点
-
-     #plt.show()
-    # 为第二步画最小的长方形做准备-随机形成uniform分布的点
-    # 最小的x坐标到最大的x坐标
-    xmin = np.min(XY_need3[:, 0])  # 左下角x坐标
-    xmax = np.max(XY_need3[:, 0])  # 右上角x坐标
-    ymin = np.min(XY_need3[:, 1])  # 左下角y坐标
-    ymax = np.max(XY_need3[:, 1])  # 右上角y坐标
-    # 画第2张图-杆塔图+包围线
-    plt.figure(2)
-    plt.plot(XY_need3[:, 0], XY_need3[:, 1], 'k-', linewidth=2)
-    plt.plot(XY_need3[:, 0], XY_need3[:, 1], 'r*')
-    plt.axis('equal')
-    # pn = fixn * 100  # 点的数量
-
-    xp = xmin + (xmax - xmin) * np.random.rand(pn, 1)  # 生成x坐标
-    yp = ymin + (ymax - ymin) * np.random.rand(pn, 1)  # 生成y坐标
-
-    # 判断随机点是否在包围线内
-    # 包围线的顶点(当多边形是封闭的，一定首尾相接)-XY_need3
-    xv = XY_need3[:, 0]
-    yv = XY_need3[:, 1]
-
-    # 如果同一个flash的第1个stroke在包围线外，去掉整个flash原本的点. 但维持flash or stroke总数不变
-    # 如果同一个flash的第1个stroke在包围线内，同一个flash的第1个stroke的点等于同一个flash所有stroke的点
-    points_need = []  # 在包围线内的点
-    firstroke = np.where(stroke_number == 1)[0]
-    ei = 0
-    while ei < len(firstroke):
-        if ei != len(firstroke) - 1:
-            fei = firstroke[ei]
-            feinext = firstroke[ei + 1]
-            # 待判断点的横坐标-xp(fei)和纵坐标-yp(fei)
-            # 判断点是否在四边形内或线上
-            # in是在四边形内，on是在四边形线上
-            in_poly = Path(list(zip(xv, yv))).contains_point((xp[ei], yp[ei]))
-            if in_poly:
-                points_need.extend([xp[ei], yp[ei]] * (feinext - fei))
-                ei += 1
-            else:
-                xp = np.delete(xp, np.arange(ei, (feinext - fei + ei))).reshape(-1, 1)
-                yp = np.delete(yp, np.arange(ei, (feinext - 1 - fei + ei))).reshape(-1, 1)
-                ei = ei
-
-        else:
-            fei = firstroke[ei]
-            feinext = len(stroke_number) - 1
-            # 待判断点的横坐标-xp(fei)和纵坐标-yp(fei)
-            # 判断点是否在四边形内或线上
-            # in是在四边形内，on是在四边形线上
-            in_poly = Path(list(zip(xv, yv))).contains_point((xp[ei], yp[ei]))
-            if in_poly:
-                points_need.extend([xp[ei], yp[ei]] * (feinext - fei + 1))
-                ei += 1
-            else:
-                xp = np.delete(xp, np.arange(ei, (feinext - fei + ei + 1))).reshape(-1, 1)
-                yp = np.delete(yp, np.arange(ei, (feinext - fei + ei + 1))).reshape(-1, 1)
-                ei = ei
+        flash = e + 1
+        sN_all = sN_all[0, 0:e + 1]
+        flash_number = np.repeat(np.arange(1, sN_all.size + 1), sN_all)  # flash_number = flash_number.reshape(-1,1).T
+        stroke_number = np.concatenate([np.arange(1, s + 1) for s in sN_all])
 
     # 每个flash总共有多少次stroke
     flash_counts = Counter(flash_number)
@@ -196,7 +245,6 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
     stroke_counts = np.array(list(flash_counts.values()))
 
     # 第3张图-杆塔图+包围线+在包围线内的点-points_need
-    points_need = np.array(points_need).reshape(-1, 2)
     plt.figure(3)
     plt.scatter(points_need[:, 0], points_need[:, 1], s=1, color='r', marker='o')
     # plt.show()
@@ -259,16 +307,16 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
             # Ip的范围 , tf的范围, Sm的范围 and th的范围
             # 不同情况对应的参数
             # 一般情况
-            if casemodel == 1 & Nmodel ==-1: # N是随机的
+            if casemodel == 1:
                 valid_Ip = (Ip1stmin <= Ip[i] <= Ip1stmax)  # 判断Ip范围
                 valid_tf = (tf1stmin < tf[i] <= tf1stmax)  # 判断tf范围
                 valid_Sm = (Sm1stmin < Sm[i] <= Sm1stmax)  # 判断Sm范围
                 valid_th = (th1stmin < th[i] <= th1stmax)  # 判断th范围
-            else: # 特定情况
-                valid_Ip = (min(Ip1stmin,Ipmin) <= Ip[i] <= max(Ip1stmax,Ipmax))  # 判断Ip范围
-                valid_tf = (min(tf1stmin,tfmin) < tf[i] <= max(tf1stmax,tfmax))  # 判断tf范围
-                valid_Sm = (min(Sm1stmin,Smmin) < Sm[i] <= max(Sm1stmax,Smmax))  # 判断Sm范围
-                valid_th = (min(th1stmin,thmin) < th[i] <= max(th1stmax,thmax))  # 判断th范围
+            else:  # 特定情况
+                valid_Ip = (min(Ip1stmin, Ipmin) <= Ip[i] <= max(Ip1stmax, Ipmax))  # 判断Ip范围
+                valid_tf = (min(tf1stmin, tfmin) < tf[i] <= max(tf1stmax, tfmax))  # 判断tf范围
+                valid_Sm = (min(Sm1stmin, Smmin) < Sm[i] <= max(Sm1stmax, Smmax))  # 判断Sm范围
+                valid_th = (min(th1stmin, thmin) < th[i] <= max(th1stmax, thmax))  # 判断th范围
 
             i += valid_Ip * valid_tf * valid_Sm * valid_th
             # a given quadruple of values for Ip tf Sm th
@@ -316,7 +364,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
             # Ip的范围 , tf的范围, Sm的范围 and th的范围
             # 不同情况对应的参数
             # 一般情况
-            if casemodel == 1 & Nmodel ==-1: # N是随机的:
+            if casemodel == 1:
                 valid_Ip = (Ipmin <= Ip[i] <= Ipmax)  # 判断Ip范围
                 valid_tf = (tfmin < tf[i] <= tfmax)  # 判断tf范围
                 valid_Sm = (Smmin < Sm[i] <= Smmax)  # 判断Sm范围
