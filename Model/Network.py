@@ -781,7 +781,7 @@ class Network:
         # lumpname/branname: label(bran0/lump1),probe,branname,n1,n2,(towername)
         if self.measurement:
             return Strategy.Measurement().apply(measurement=self.measurement, solution=self.solution,dt=self.dt)
-    def run_MC(self,load_dict):
+    def run_MC(self,load_dict,Distance):
     ### 用大矩阵----------
         # 0. 手动预设值
         # self.global_set(load_dict)
@@ -825,10 +825,140 @@ class Network:
         # 3. 生成多个雷电
         if load_dict["MC"]:
             print("running Monte Carlo to generate lightnings")
-            df27_list,parameterst_list,stroke_result_list,PoleXY = run_MC(self,load_dict)
+            df27,parameterst,stroke_result,PoleXY = run_MC(self,load_dict,Distance)
 
             MC_result_list = []
             summary = {"FO":[],"Huri":[],"RunTime":[]}
+            with Manager() as manager:
+                shared_dict = manager.dict()
+                index = 0
+                MC_result = []
+                #对每个flash
+                for i in df27.groupby("flash"):
+                    stroke_list = []
+                    #初始化每个stroke
+                    for j in range(i[1].shape[0]):
+                        stroke_type = "Heidler"
+                        duration = self.T
+                        dt = self.dt
+                        stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True, parameter_set=None,
+                                    parameters=[parameterst[index].tolist()[2],parameterst[index].tolist()[3],
+                                    parameterst[index].tolist()[5],parameterst[index].tolist()[4]])
+                        stroke.calculate()
+                        index += 1
+                        stroke_list.append(stroke)
+                    flash_type = stroke_result[0][index - 1]
+                    area = int(stroke_result[1][index - 1])
+                    area_id = 0 if math.isnan(stroke_result[2][index - 1]) else str(int(stroke_result[2][index - 1]))
+                    cir_id = 0 if math.isnan(float(stroke_result[3][index - 1])) else int(
+                        float(stroke_result[3][index - 1]))
+                    phase_id = 0 if math.isnan(float(stroke_result[4][index - 1])) else int(
+                        float(stroke_result[4][index - 1]))
+                    position_xy = stroke_result[8][index - 1]
+                    position = None
+                    wire = None
+                    if area == 0:
+                        area = "Ground"
+                        position = position_xy.append(0)
+                    elif area == 1:
+                        area = "tower_" + area_id
+                        for tower in load_dict["Tower"]:
+                            if tower["Info"]["name"] == area:
+                                z = tower["Info"]["pole_height"]
+                                position = position_xy.append(z)
+                                for w in tower["Wire"]:
+                                    if w["pos_1"][2] == z or w["pos_2"][2] == z:
+                                        wire = w["bran"]
+                                if wire is None:
+                                    wire = tower["Wire"][0]
+                    elif area == 2:
+                        area = "OHL_" + area_id
+                        for ohl in load_dict["OHL"]:
+                            if ohl["Info"]["name"] == area:
+                                for w in ohl["Wire"]:
+                                    cir_id_ohl = w['cir_id']
+                                    phase_id_ohl = w['phase_id']
+                                    if cir_id_ohl == cir_id and phase_id_ohl == phase_id:
+                                        z = w["node1_pos"][2]
+                                        position = position_xy.append(z)
+                                        if w['type'] == 'SW':
+                                            wire = 'Y' + str(cir_id) + 'S'
+                                        elif w['type'] == 'CIRO':
+                                            wire = 'Y' + str(cir_id) + w['phase']
+
+                    lightning = Lightning(id=1, type=flash_type, strokes=stroke_list, channel=Channel(position_xy))
+                    MC_result.append((lightning, area, wire, position_xy))
+                #MC_result_list.append(MC_result)
+                record_SAF = load_dict["MC"]["Record_SAF"]
+                start_time = time.time()
+                  # 创建一个共享字典
+                if record_SAF==1:
+                    self.Huri_method_SAF(MC_result, nodes, branches,shared_dict)
+                else:
+                    FO,huri = self.Huri_method_INS(MC_result, nodes, branches,shared_dict)
+                end_time = time.time()  # 记录结束时间
+                duration = end_time - start_time  # 计算运行时长
+                true_count = len(list(filter(lambda x: x, FO)))
+                if len(parameterst) ==0:
+                    summary["FO"].append(None)
+                    summary["Huri"].append(None)
+                    summary["RunTime"].append(duration)
+
+                summary["FO"].append(true_count/len(parameterst))
+                summary["Huri"].append(huri)
+                summary["RunTime"].append(duration)
+                print("FO: ", summary["FO"])
+                print("Huri: ",summary["Huri"])
+                print("Running time: ",summary["RunTime"])  # 打印运行时长
+
+
+    def Pre_run_MC(self, load_dict):
+        ### 用大矩阵----------
+        # 0. 手动预设值
+        # self.global_set(load_dict)
+        # self.dt = 1e-8
+        # #self.Nt = 1000
+        # self.T = 2e-5
+        # self.Nt = int(np.ceil(self.T / self.dt))
+        # # 1. 初始化电网，根据电网信息计算源
+        # self.initialize_network(load_dict,self.VF)
+        # self.combine_parameter_matrix()
+        # branches = self.calculate_branches(self.max_length)
+        # nodes = self.capacitance_matrix.columns.tolist()
+
+        #### 用小矩阵-----------
+        print("Hybrid model is used")
+
+        self.solution_type['hybrid'] = True
+        self.global_set(load_dict)
+        constants = Constant()
+        self.dt = self.max_length / constants.vc
+        self.Nt = int(np.ceil(self.T / self.dt))
+
+        self.initialize_network(load_dict, self.VF)
+
+        tower_matrix = self.tower_individual_matrix()  # 合并tower矩阵
+        line_matrix = self.line_individual_matrix()  # 合并cable和OHL矩阵
+
+        # tower_branches, tower_nodes, tower_or_lump_nodes, tower_and_line_nodes = self.nodes_of_hybrid_mode()
+        tower_branches = {}
+        tower_branches, tower_nodes = self.tower_branches(tower_branches)
+        tower_nodes.discard('ref')
+
+        self.H = {"Line": line_matrix, "Tower": tower_matrix}
+
+        # 2. 保存支路节点信息
+        branches = self.calculate_branches(self.max_length)
+        nodes = list(tower_nodes | set(line_matrix["capacitance_matrix"].columns.tolist()))
+
+        # 3. 生成多个雷电
+        if load_dict["MC"]:
+            print("running Monte Carlo to generate lightnings")
+            df27_list, parameterst_list, stroke_result_list, PoleXY = run_MC(self, load_dict,None)
+
+            MC_result_list = []
+            summary = {"FO": [], "Huri": [], "RunTime": []}
+            FO_num = 0
             with Manager() as manager:
                 shared_dict = manager.dict()
                 for a in range(len(df27_list)):
@@ -837,23 +967,26 @@ class Network:
                     df27 = df27_list[a]
                     parameterst = parameterst_list[a]
                     stroke_result = stroke_result_list[a]
-                    #对每个flash
+                    # 对每个flash
                     for i in df27.groupby("flash"):
                         stroke_list = []
-                        #初始化每个stroke
+                        # 初始化每个stroke
                         for j in range(i[1].shape[0]):
                             stroke_type = "Heidler"
                             duration = self.T
                             dt = self.dt
-                            stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True, parameter_set=None,
-                                        parameters=[parameterst[index].tolist()[2]*1e3,parameterst[index].tolist()[3],
-                                        parameterst[index].tolist()[5],parameterst[index].tolist()[4]])
+                            stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True,
+                                            parameter_set=None,
+                                            parameters=[parameterst[index].tolist()[2] ,
+                                                        parameterst[index].tolist()[3],
+                                                        parameterst[index].tolist()[5], parameterst[index].tolist()[4]])
                             stroke.calculate()
                             index += 1
                             stroke_list.append(stroke)
                         flash_type = stroke_result[0][index - 1]
                         area = int(stroke_result[1][index - 1])
-                        area_id = 0 if math.isnan(stroke_result[2][index - 1]) else str(int(stroke_result[2][index - 1]))
+                        area_id = 0 if math.isnan(stroke_result[2][index - 1]) else str(
+                            int(stroke_result[2][index - 1]))
                         cir_id = 0 if math.isnan(float(stroke_result[3][index - 1])) else int(
                             float(stroke_result[3][index - 1]))
                         phase_id = 0 if math.isnan(float(stroke_result[4][index - 1])) else int(
@@ -889,43 +1022,59 @@ class Network:
                                                 wire = 'Y' + str(cir_id) + 'S'
                                             elif w['type'] == 'CIRO':
                                                 wire = 'Y' + str(cir_id) + w['phase']
-
                         lightning = Lightning(id=1, type=flash_type, strokes=stroke_list, channel=Channel(position_xy))
                         MC_result.append((lightning, area, wire, position_xy))
-                    #MC_result_list.append(MC_result)
-                    record_SAF = load_dict["MC"]["Record_SAF"]
                     start_time = time.time()
-                      # 创建一个共享字典
-                    if record_SAF==1:
-                        self.Huri_method_SAF(MC_result, nodes, branches,shared_dict)
-                    else:
-                        FO,huri = self.Huri_method_INS(MC_result, nodes, branches,shared_dict)
+                    # 创建一个共享字典
+                    FO, huri = self.Find_Dmax(MC_result, nodes, branches, shared_dict)
                     end_time = time.time()  # 记录结束时间
                     duration = end_time - start_time  # 计算运行时长
                     true_count = len(list(filter(lambda x: x, FO)))
-                    if len(parameterst) ==0:
-                        summary["FO"].append(None)
-                        summary["Huri"].append(None)
-                        summary["RunTime"].append(duration)
-                        continue
-                    summary["FO"].append(true_count/len(parameterst))
+                    if true_count <= 5:
+
+                        self.save_result(summary,path='Data/input/case2_linear/')
+                        Distance_max = len(summary["FO"])*100
+                        print("maximum distance is: ",Distance_max)
+                        return Distance_max
+
+                    FO_num = FO_num+true_count
+                    summary["FO"].append(FO_num)
                     summary["Huri"].append(huri)
                     summary["RunTime"].append(duration)
-                print("FO: ", summary["FO"])
-                print("Huri: ",summary["Huri"])
-                print("Running time: ",summary["RunTime"])  # 打印运行时长
-                for key, values in summary.items():
-                    plt.figure()  # 创建一个新的图形
-                    plt.plot(values)
-                    plt.title(f'Plot for {key}')
-                    plt.xlabel('Index')
-                    plt.ylabel('Value')
-                    plt.show()
-                    # 保存每个图表为图片文件
-                    plt.savefig(f'Data/input/case2_linear/{key}_plot.png')
-                    plt.show()
-                    plt.close()
-                    #self.run_multiprocessed(MC_result, nodes, branches,shared_dict,PoleXY)
+
+                self.save_result(summary,path='Data/input/case2_linear/')
+                Distance_max = len(summary["FO"]) * 100
+                print("maximum distance is: ", Distance_max)
+                return Distance_max
+    def save_result(self,summary,path):
+        print("FO: ", summary["FO"])
+        print("Huri: ", summary["Huri"])
+        print("Running time: ", summary["RunTime"])  # 打印运行时长
+        for key, values in summary.items():
+            plt.figure()  # 创建一个新的图形
+            plt.plot(values)
+            plt.title(f'Plot for {key}')
+            plt.xlabel('Index')
+            plt.ylabel('Value')
+            # 保存每个图表为图片文件
+            plt.savefig(f'{path}{key}_plot.png')
+            plt.close()  # 关闭图形，避免内存泄漏
+
+            # 将数据保存到CSV文件
+            # 创建一个DataFrame，其中包含索引和对应的值
+            df = pd.DataFrame({'Index': range(len(values)), 'Value': values})
+            # 保存DataFrame到CSV文件
+            df.to_csv(f'Data/input/case2_linear/{key}_values.csv', index=False)
+        # 所有图片保存后，显示它们
+        for key, values in summary.items():
+            plt.figure()
+            plt.plot(values)
+            plt.title(f'Plot for {key}')
+            plt.xlabel('Index')
+            plt.ylabel('Value')
+            plt.show()
+            # self.run_multiprocessed(MC_result, nodes, branches,shared_dict,PoleXY)
+
     def run_multiprocessed(self, MC_results, nodes, branches,shared_dict,PoleXY):
         # 创建一个Manager对象，用于创建共享字典
         # with Manager() as manager:
@@ -1034,6 +1183,88 @@ class Network:
                 FO.append(False)
 
     def Huri_method_INS(self,MC_result, nodes, branches,shared_dict):
+        icurr = []
+        dataset = []
+        FO = []
+        R = 100
+        constants = Constant()
+        constants.ep0 = 8.85e-12
+        index = 0
+        calculate_ins = 1
+        huri = 0
+        for MC in MC_result:
+            if MC[0].type == "Direct":
+                #solution,ins = process_item(MC, nodes, branches, self,index,shared_dict,calculate_ins)
+                ins = process_item(MC, nodes, branches, self, index, shared_dict, calculate_ins)
+                index = index+1
+                #if ins["FO"]:
+                if ins:
+                    FO.append(ins)
+                else:
+                    FO.append(False)
+                continue
+            flash_position = MC[0].channel.hit_pos[:2]
+            if len(dataset) == 0:
+                #solution, ins = process_item(MC, nodes, branches, self, index, shared_dict,calculate_ins)
+                ins = process_item(MC, nodes, branches, self, index, shared_dict, calculate_ins)
+                index = index + 1
+                #if ins["FO"]:
+                if ins:
+                    FO.append(ins)
+                    continue
+                else:
+                    distances = []
+                    for coord in list(self.PoleXY.values()):
+                        distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
+                        distances.append((coord, distance))
+                    distances.sort(key=lambda item: item[1])
+                    closest_two = distances[:2]
+                    PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
+                        , closest_two[0][1], closest_two[1][1]]
+                    dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
+                    FO.append(False)
+                    continue
+            if len(dataset)>0:
+                #for i,stroke in enumerate(MC[0].strokes):
+                stroke = MC[0].strokes[0]
+                icur = np.append(stroke.parameters,flash_position)
+                result = Huri_Method(R,dataset,icur)
+                if result ==1:
+                    FO.append(False)
+                    huri = huri+1
+                    distances = []
+                    for coord in list(self.PoleXY.values()):
+                        distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
+                        distances.append((coord, distance))
+                    distances.sort(key=lambda item: item[1])
+                    closest_two = distances[:2]
+                    PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
+                        , closest_two[0][1], closest_two[1][1]]
+                    dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
+
+                    print("using Huri skip calculation")
+                    continue
+            #solution, ins = process_item(MC, nodes, branches, self, index, shared_dict,calculate_ins)
+            ins = process_item(MC, nodes, branches, self, index, shared_dict, calculate_ins)
+            index = index + 1
+           # if ins["FO"]:
+            if ins:
+                FO.append(ins)
+
+            else:
+                distances = []
+                for coord in list(self.PoleXY.values()):
+                    distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
+                    distances.append((coord, distance))
+                distances.sort(key=lambda item: item[1])
+                closest_two = distances[:2]
+                PoleApp = [closest_two[0][0][0],closest_two[0][0][1],closest_two[1][0][0],closest_two[1][0][1]
+                                                ,closest_two[0][1],closest_two[1][1]]
+                dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
+                FO.append(False)
+        return FO,huri
+
+    def Find_Dmax(self,MC_result, nodes, branches,shared_dict):
         icurr = []
         dataset = []
         FO = []

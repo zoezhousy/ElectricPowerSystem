@@ -34,7 +34,13 @@ if __name__ == '__main__':
         network.run_base(load_dict)
         network.sensitive_analysis(load_dict)
     elif calculation == 2:
-        network.run_MC(load_dict)
+        distance = network.Pre_run_MC(load_dict)
+        network = Network()
+        file_name = "case3_nonlinear/nonlinear"
+        json_file_path = "Data/input/" + file_name + ".json"
+        with open(json_file_path, 'r', encoding="utf-8") as j:
+            load_dict = json.load(j)
+        network.run_MC(load_dict,distance)
 
 
     # 二、灵敏度分析模块

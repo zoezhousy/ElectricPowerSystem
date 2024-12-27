@@ -17,7 +17,7 @@ import sys
 # network = pickle.load(open('../Data/output/network.pkl', 'rb'))
 # print(network.dt)
 
-def run_MC(network,load_dict):
+def run_MC(network,load_dict,Dmax):
 
     Line = {}
     Line["Node_all"] = np.empty((0, 5))
@@ -129,7 +129,9 @@ def run_MC(network,load_dict):
 
     DSave = load_dict["MC"]["DSave"]
     AR = load_dict["MC"]["AR"]
-    surrounding_distance =  load_dict["MC"]["surrounding_distance"]
+    surrounding_distance = Dmax
+    if Dmax is None:
+        surrounding_distance =  load_dict["MC"]["surrounding_distance"]
     foldname = "Data/output"
     Wave_Model = 1
     # 1. 画范围框
