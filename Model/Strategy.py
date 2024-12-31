@@ -282,7 +282,7 @@ class MC_Linear(Strategy):
         solution = pd.DataFrame(out,index=H["capacitance_matrix"].columns.tolist() + H["inductance_matrix"].columns.tolist())
         for x in tower_head_node:
             #if abs(np.max(out[H["capacitance_matrix"].columns.tolist().index(x[0]), :])) > 75000:
-            if np.max(abs(out[H["capacitance_matrix"].columns.tolist().index(x), :])) > 75000:
+            if np.max(abs(out[H["capacitance_matrix"].columns.tolist().index(x), :])) > 125000:
                 return True
         return  False
 
@@ -699,7 +699,7 @@ class hybrid_linear(Hybrid_Strategy):
                 Vout_ohl[itcal['ohl_cross_index'], i + 1] = temp_result[itcal['tower_cross_index']]
 
             # ohl solution
-            Iout_ohl[:, i + 1] = inv_RL_o @ (LdeR @ Iout_ohl[:, i] - im_o @ Vout_ohl[:, i + 1] - vs_o[:, i + 1])
+            Iout_ohl[:, i + 1] = inv_RL_o @ (LdeR @ Iout_ohl[:, i] - im_o @ Vout_ohl[:, i + 1] + vs_o[:, i + 1])
             Vout_ohl[:, i + 2] = inv_GC_o @ (CdeG @ Vout_ohl[:, i + 1] + im_o.T @ Iout_ohl[:, i + 1] + is_o[:, i + 1])
 
             I_allcross = im_o.T @ Iout_ohl[:, i + 1]

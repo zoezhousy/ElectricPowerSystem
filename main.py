@@ -36,7 +36,7 @@ if __name__ == '__main__':
     elif calculation == 2:
         distance = network.Pre_run_MC(load_dict)
         network = Network()
-        file_name = "case3_nonlinear/nonlinear"
+        file_name = "case3_nonlinear/nonlinear_ye"
         json_file_path = "Data/input/" + file_name + ".json"
         with open(json_file_path, 'r', encoding="utf-8") as j:
             load_dict = json.load(j)

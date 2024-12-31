@@ -38,6 +38,7 @@ from multiprocessing import Process, Manager,Lock
 from Risk_Evaluate.Huri_Method import Huri_Method
 from tqdm import tqdm
 import cupy as cp
+from tqdm import tqdm
 
 
 class Network:
@@ -793,7 +794,7 @@ class Network:
         # self.initialize_network(load_dict,self.VF)
         # self.combine_parameter_matrix()
         # branches = self.calculate_branches(self.max_length)
-        #nodes = self.capacitance_matrix.columns.tolist()
+        # nodes = self.capacitance_matrix.columns.tolist()
 
 #### 用小矩阵-----------
         print("Hybrid model is used")
@@ -915,41 +916,41 @@ class Network:
     def Pre_run_MC(self, load_dict):
         ### 用大矩阵----------
         # 0. 手动预设值
-        # self.global_set(load_dict)
-        # self.dt = 1e-8
-        # #self.Nt = 1000
-        # self.T = 2e-5
-        # self.Nt = int(np.ceil(self.T / self.dt))
-        # # 1. 初始化电网，根据电网信息计算源
-        # self.initialize_network(load_dict,self.VF)
-        # self.combine_parameter_matrix()
-        # branches = self.calculate_branches(self.max_length)
-        # nodes = self.capacitance_matrix.columns.tolist()
+        self.global_set(load_dict)
+        self.dt = 1e-8
+        #self.Nt = 1000
+        self.T = 2e-5
+        self.Nt = int(np.ceil(self.T / self.dt))
+        # 1. 初始化电网，根据电网信息计算源
+        self.initialize_network(load_dict,self.VF)
+        self.combine_parameter_matrix()
+        branches = self.calculate_branches(self.max_length)
+        nodes = self.capacitance_matrix.columns.tolist()
 
         #### 用小矩阵-----------
-        print("Hybrid model is used")
-
-        self.solution_type['hybrid'] = True
-        self.global_set(load_dict)
-        constants = Constant()
-        self.dt = self.max_length / constants.vc
-        self.Nt = int(np.ceil(self.T / self.dt))
-
-        self.initialize_network(load_dict, self.VF)
-
-        tower_matrix = self.tower_individual_matrix()  # 合并tower矩阵
-        line_matrix = self.line_individual_matrix()  # 合并cable和OHL矩阵
-
-        # tower_branches, tower_nodes, tower_or_lump_nodes, tower_and_line_nodes = self.nodes_of_hybrid_mode()
-        tower_branches = {}
-        tower_branches, tower_nodes = self.tower_branches(tower_branches)
-        tower_nodes.discard('ref')
-
-        self.H = {"Line": line_matrix, "Tower": tower_matrix}
-
-        # 2. 保存支路节点信息
-        branches = self.calculate_branches(self.max_length)
-        nodes = list(tower_nodes | set(line_matrix["capacitance_matrix"].columns.tolist()))
+        # print("Hybrid model is used")
+        #
+        # self.solution_type['hybrid'] = True
+        # self.global_set(load_dict)
+        # constants = Constant()
+        # self.dt = self.max_length / constants.vc
+        # self.Nt = int(np.ceil(self.T / self.dt))
+        #
+        # self.initialize_network(load_dict, self.VF)
+        #
+        # tower_matrix = self.tower_individual_matrix()  # 合并tower矩阵
+        # line_matrix = self.line_individual_matrix()  # 合并cable和OHL矩阵
+        #
+        # # tower_branches, tower_nodes, tower_or_lump_nodes, tower_and_line_nodes = self.nodes_of_hybrid_mode()
+        # tower_branches = {}
+        # tower_branches, tower_nodes = self.tower_branches(tower_branches)
+        # tower_nodes.discard('ref')
+        #
+        # self.H = {"Line": line_matrix, "Tower": tower_matrix}
+        #
+        # # 2. 保存支路节点信息
+        # branches = self.calculate_branches(self.max_length)
+        # nodes = list(tower_nodes | set(line_matrix["capacitance_matrix"].columns.tolist()))
 
         # 3. 生成多个雷电
         if load_dict["MC"]:
@@ -961,7 +962,7 @@ class Network:
             FO_num = 0
             with Manager() as manager:
                 shared_dict = manager.dict()
-                for a in range(len(df27_list)):
+                for a in tqdm(range(len(df27_list))):
                     index = 0
                     MC_result = []
                     df27 = df27_list[a]
@@ -977,7 +978,7 @@ class Network:
                             dt = self.dt
                             stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True,
                                             parameter_set=None,
-                                            parameters=[parameterst[index].tolist()[2] ,
+                                            parameters=[parameterst[index].tolist()[2]*1e3 ,
                                                         parameterst[index].tolist()[3],
                                                         parameterst[index].tolist()[5], parameterst[index].tolist()[4]])
                             stroke.calculate()
@@ -1030,12 +1031,11 @@ class Network:
                     end_time = time.time()  # 记录结束时间
                     duration = end_time - start_time  # 计算运行时长
                     true_count = len(list(filter(lambda x: x, FO)))
-                    if true_count <= 5:
-
-                        self.save_result(summary,path='Data/input/case2_linear/')
-                        Distance_max = len(summary["FO"])*100
-                        print("maximum distance is: ",Distance_max)
-                        return Distance_max
+                    # if true_count <= 1:
+                    #     self.save_result(summary,path='Data/input/case2_linear/')
+                    #     Distance_max = len(summary["FO"])*100
+                    #     print("maximum distance is: ",Distance_max)
+                    #     return Distance_max
 
                     FO_num = FO_num+true_count
                     summary["FO"].append(FO_num)
@@ -1351,29 +1351,29 @@ def process_item(MC, nodes, branches, self_ref,index,shared_dict,calculate_ins):
     constants.ep0 = 8.85e-12
     U_out, I_out,shared_dict = self_ref.source_calculate(MC[0], MC[1], MC[2], MC[3], nodes, branches,constants,shared_dict)
     sources = self_ref.add_lump(U_out, I_out)
-    line_matrix = self_ref.H["Line"]
-    tower_matrix = self_ref.H["Tower"]
-    result_tower, ins_bran = self_ref.calculate_of_hybrid_mode(line_matrix, tower_matrix, sources, self_ref.Nt, self_ref.dt, self_ref.GPU_calculation)
-    print("calculate"+str(index))
-
-    ins = False
-    if len(ins_bran["SDEM"])>0:
-        ins = True
-        # 指定CSV文件名
-        filename = "Data/output/MC_ins.csv"
-        # 使用'a'模式打开文件，准备追加内容
-        with open(filename, 'a', newline='') as csvfile:
-            # 创建一个csv写入器
-            writer = csv.writer(csvfile)
-            writer.writerow(ins_bran["SDEM"])
-
-    return ins
+    # line_matrix = self_ref.H["Line"]
+    # tower_matrix = self_ref.H["Tower"]
+    # result_tower, ins_bran = self_ref.calculate_of_hybrid_mode(line_matrix, tower_matrix, sources, self_ref.Nt, self_ref.dt, self_ref.GPU_calculation)
+    # print("calculate"+str(index))
+    #
+    # ins = False
+    # if len(ins_bran["SDEM"])>0:
+    #     ins = True
+    #     # 指定CSV文件名
+    #     filename = "Data/output/MC_ins.csv"
+    #     # 使用'a'模式打开文件，准备追加内容
+    #     with open(filename, 'a', newline='') as csvfile:
+    #         # 创建一个csv写入器
+    #         writer = csv.writer(csvfile)
+    #         writer.writerow(ins_bran["SDEM"])
+    #
+    # return ins
 
   ## 用大矩阵------------
 
-    # H = self_ref.build_H()
-    # if calculate_ins ==1:
-    #     ins = self_ref.INS_calculate(self_ref.Nt,self_ref.dt, H, sources)
-    #     print("calculate"+str(index))
-    #     return ins
+    H = self_ref.build_H()
+    if calculate_ins ==1:
+        ins = self_ref.INS_calculate(self_ref.Nt,self_ref.dt, H, sources)
+        print("calculate"+str(index))
+        return ins
 
