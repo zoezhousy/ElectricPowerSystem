@@ -1,0 +1,2922 @@
+{
+  "user_id": "01",
+  "case_id": 2,
+  "Tower": [
+    {
+      "name": "tower_1",
+      "Info": {
+        "name": "tower_1",
+        "id": "1",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_1"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_1",
+          "probe": null,
+          "node1": "X01_Tower_1",
+          "node2": "X02_Tower_1",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "MTCK",
+          "name": "MTCK",
+          "probe": null,
+          "bran_name": ["YMTCK1"],
+          "node1": ["X03_Tower_1"],
+          "node2": "ref",
+          "data_type": null,
+          "value1": [0],
+          "value2": [10],
+          "value3": [0.005],
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_1",
+          "node1": "X01_Tower_1",
+          "node2": "X03_Tower_1",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_2",
+      "Info": {
+        "name": "tower_2",
+        "id": "2",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          40,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_2"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_2",
+          "probe": null,
+          "node1": "X01_Tower_2",
+          "node2": "X02_Tower_2",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_2",
+          "node1": "X01_Tower_2",
+          "node2": "X03_Tower_2",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+        ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_3",
+      "Info": {
+        "name": "tower_3",
+        "id": "3",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          100,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_3"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_3",
+          "probe": null,
+          "node1": "X01_Tower_3",
+          "node2": "X02_Tower_3",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_3",
+          "node1": "X01_Tower_3",
+          "node2": "X03_Tower_3",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_4",
+      "Info": {
+        "name": "tower_4",
+        "id": "4",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          160,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_4"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_4",
+          "probe": null,
+          "node1": "X01_Tower_4",
+          "node2": "X02_Tower_4",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_4",
+          "node1": "X01_Tower_4",
+          "node2": "X03_Tower_4",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_5",
+      "Info": {
+        "name": "tower_5",
+        "id": "5",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          220,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_5"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_5",
+          "probe": null,
+          "node1": "X01_Tower_5",
+          "node2": "X02_Tower_5",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_5",
+          "node1": "X01_Tower_5",
+          "node2": "X03_Tower_5",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_6",
+      "Info": {
+        "name": "tower_6",
+        "id": "6",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          280,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_6"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_6",
+          "probe": null,
+          "node1": "X01_Tower_6",
+          "node2": "X02_Tower_6",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_6",
+          "node1": "X01_Tower_6",
+          "node2": "X03_Tower_6",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_7",
+      "Info": {
+        "name": "tower_7",
+        "id": "7",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          340,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_7"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_7",
+          "probe": null,
+          "node1": "X01_Tower_7",
+          "node2": "X02_Tower_7",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_7",
+          "node1": "X01_Tower_7",
+          "node2": "X03_Tower_7",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_8",
+      "Info": {
+        "name": "tower_8",
+        "id": "8",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          400,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_8"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_8",
+          "probe": null,
+          "node1": "X01_Tower_8",
+          "node2": "X02_Tower_8",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_8",
+          "node1": "X01_Tower_8",
+          "node2": "X03_Tower_8",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_9",
+      "Info": {
+        "name": "tower_9",
+        "id": "9",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          460,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_9"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_9",
+          "probe": null,
+          "node1": "X01_Tower_9",
+          "node2": "X02_Tower_9",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_9",
+          "node1": "X01_Tower_9",
+          "node2": "X03_Tower_9",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_10",
+      "Info": {
+        "name": "tower_10",
+        "id": "10",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          520,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_10"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_10",
+          "probe": null,
+          "node1": "X01_Tower_10",
+          "node2": "X02_Tower_10",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_10",
+          "node1": "X01_Tower_10",
+          "node2": "X03_Tower_10",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_11",
+      "Info": {
+        "name": "tower_11",
+        "id": "11",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          580,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_11"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_11",
+          "probe": null,
+          "node1": "X01_Tower_11",
+          "node2": "X02_Tower_11",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_11",
+          "node1": "X01_Tower_11",
+          "node2": "X03_Tower_11",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_12",
+      "Info": {
+        "name": "tower_12",
+        "id": "12",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          640,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_12"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_12r",
+          "probe": null,
+          "node1": "X01_Tower_12",
+          "node2": "X02_Tower_12",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_12",
+          "node1": "X01_Tower_12",
+          "node2": "X03_Tower_12",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_13",
+      "Info": {
+        "name": "tower_13",
+        "id": "13",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          700,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_13"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_13",
+          "probe": null,
+          "node1": "X01_Tower_13",
+          "node2": "X01_Tower_13",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_13",
+          "node1": "X01_Tower_13",
+          "node2": "X03_Tower_13",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_14",
+      "Info": {
+        "name": "tower_14",
+        "id": "14",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          760,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_14"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_14",
+          "probe": null,
+          "node1": "X01_Tower_14",
+          "node2": "X02_Tower_14",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_14",
+          "node1": "X01_Tower_14",
+          "node2": "X03_Tower_14",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_15",
+      "Info": {
+        "name": "tower_15",
+        "id": "15",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          820,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_15"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_15",
+          "probe": null,
+          "node1": "X01_Tower_15",
+          "node2": "X02_Tower_15",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_15",
+          "node1": "X01_Tower_15",
+          "node2": "X03_Tower_15",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_16",
+      "Info": {
+        "name": "tower_16",
+        "id": "16",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          880,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_16"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_16",
+          "probe": null,
+          "node1": "X01_Tower_16",
+          "node2": "X02_Tower_16",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_16",
+          "node1": "X01_Tower_16",
+          "node2": "X03_Tower_16",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_17",
+      "Info": {
+        "name": "tower_17",
+        "id": "17",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          940,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_17"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_17",
+          "probe": null,
+          "node1": "X01_Tower_17",
+          "node2": "X02_Tower_17",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+
+        {
+          "Type": "RL",
+          "name": "RL",
+          "probe": null,
+          "bran_name": "Y03_Tower_17",
+          "node1": "X01_Tower_17",
+          "node2": "X03_Tower_17",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+      ]
+    },
+    {
+      "name": "tower_18",
+      "Info": {
+        "name": "tower_18",
+        "id": "18",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          1000,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "con_mode": 0,
+         "mode_gnd": 0,
+        "pole_height": 10,
+        "pole_head": "X01_Tower_18"
+      },
+      "ground": {
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 1,
+        "gnd_mode": 1,
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_18",
+          "probe": null,
+          "node1": "X01_Tower_18",
+          "node2": "X02_Tower_18",
+          "pos_1": [
+            0,
+            0,
+            10
+          ],
+          "pos_2": [
+            0,
+            0,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+        {
+          "Type": "MTCK",
+          "name": "MTCK",
+          "probe": null,
+          "bran_name": ["YMTCK2"],
+          "node1": ["X01_Tower_18"],
+          "node2": "ref",
+          "data_type": null,
+          "value1": [0],
+          "value2": [10],
+          "value3": [0.005],
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+      },
+      {
+        "Type": "RL",
+        "name": "RL",
+        "probe": null,
+        "bran_name": "Y03_Tower_18",
+        "node1": "X01_Tower_18",
+        "node2": "X03_Tower_18",
+        "data_type": null,
+        "value1": 1e6,
+        "value2": 0,
+        "value3": null,
+        "value4": null,
+        "value5": null,
+        "pointer": null,
+        "comments": null
+        }
+      ],
+      "Device": [
+      ]
+      }
+  ],
+  "OHL": [
+    {
+      "name": "OHL_1",
+      "Info": {
+        "name": "OHL_1",
+        "type": "type_01",
+        "id": 1,
+        "dL": 10,
+        "con_mode": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_1",
+        "Tower_head_id": 1,
+        "Tower_head_pos": [
+          0,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_2",
+        "Tower_tail_id": 2,
+        "Tower_tail_pos": [
+          40,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_1",
+          "node2": "X03_Tower_2",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_2",
+      "Info": {
+        "name": "OHL_2",
+        "type": "type_01",
+        "id": 2,
+        "dL": 10,
+                "con_mode": 0,
+        "model2": 0,
+        "mode_con": 0,
+        "Tower_head": "tower_2",
+        "Tower_head_id": 2,
+        "Tower_head_pos": [
+          40,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_3",
+        "Tower_tail_id": 3,
+        "Tower_tail_pos": [
+          100,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_2",
+          "node2": "X03_Tower_3",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_3",
+      "Info": {
+        "name": "OHL_3",
+        "type": "type_01",
+        "id": 3,
+        "dL": 10,
+        "mode_con": 0,
+                "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_3",
+        "Tower_head_id": 3,
+        "Tower_head_pos": [
+          100,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_4",
+        "Tower_tail_id": 4,
+        "Tower_tail_pos": [
+          160,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_3",
+          "node2": "X03_Tower_4",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_4",
+      "Info": {
+        "name": "OHL_4",
+        "type": "type_01",
+        "id": 4,
+        "dL": 10,
+        "mode_con": 0,
+                "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_4",
+        "Tower_head_id": 4,
+        "Tower_head_pos": [
+          160,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_5",
+        "Tower_tail_id": 5,
+        "Tower_tail_pos": [
+          220,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_4",
+          "node2": "X03_Tower_5",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_5",
+      "Info": {
+        "name": "OHL_5",
+        "type": "type_01",
+        "id": 5,
+        "dL": 10,
+        "mode_con": 0,
+                "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_5",
+        "Tower_head_id": 5,
+        "Tower_head_pos": [
+          220,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_6",
+        "Tower_tail_id": 6,
+        "Tower_tail_pos": [
+          280,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_5",
+          "node2": "X03_Tower_6",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_6",
+      "Info": {
+        "name": "OHL_6",
+        "type": "type_01",
+        "id": 6,
+        "dL": 10,
+        "mode_con": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_6",
+        "Tower_head_id": 6,
+        "Tower_head_pos": [
+          280,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_7",
+        "Tower_tail_id": 7,
+        "Tower_tail_pos": [
+          340,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_6",
+          "node2": "X03_Tower_7",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_7",
+      "Info": {
+        "name": "OHL_7",
+        "type": "type_01",
+        "id": 7,
+        "dL": 10,
+        "mode_con": 0,
+                "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_7",
+        "Tower_head_id": 7,
+        "Tower_head_pos": [
+          340,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_8",
+        "Tower_tail_id": 8,
+        "Tower_tail_pos": [
+          400,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_7",
+          "node2": "X03_Tower_8",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_8",
+      "Info": {
+        "name": "OHL_8",
+        "type": "type_01",
+        "id": 8,
+        "dL": 10,
+        "mode_con": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_8",
+        "Tower_head_id": 8,
+        "Tower_head_pos": [
+          400,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_9",
+        "Tower_tail_id": 9,
+        "Tower_tail_pos": [
+          460,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_8",
+          "node2": "X03_Tower_9",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_9",
+      "Info": {
+        "name": "OHL_9",
+        "type": "type_01",
+        "id": 9,
+        "dL": 10,
+        "mode_con": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_9",
+        "Tower_head_id": 9,
+        "Tower_head_pos": [
+          460,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_10",
+        "Tower_tail_id": 10,
+        "Tower_tail_pos": [
+          520,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_9",
+          "node2": "X03_Tower_10",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_10",
+      "Info": {
+        "name": "OHL_10",
+        "type": "type_01",
+        "id": 10,
+        "dL": 10,
+        "mode_con": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_10",
+        "Tower_head_id": 10,
+        "Tower_head_pos": [
+          520,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_11",
+        "Tower_tail_id": 11,
+        "Tower_tail_pos": [
+          580,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_10",
+          "node2": "X03_Tower_11",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_11",
+      "Info": {
+        "name": "OHL_11",
+        "type": "type_01",
+        "id": 11,
+        "dL": 10,
+        "mode_con": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_11",
+        "Tower_head_id": 11,
+        "Tower_head_pos": [
+          580,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_12",
+        "Tower_tail_id": 12,
+        "Tower_tail_pos": [
+          640,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_11",
+          "node2": "X03_Tower_12",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_12",
+      "Info": {
+        "name": "OHL_12",
+        "type": "type_01",
+        "id": 12,
+        "dL": 10,
+        "mode_con": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_12",
+        "Tower_head_id": 12,
+        "Tower_head_pos": [
+          640,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_13",
+        "Tower_tail_id": 13,
+        "Tower_tail_pos": [
+          700,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_12",
+          "node2": "X03_Tower_13",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_13",
+      "Info": {
+        "name": "OHL_13",
+        "type": "type_01",
+        "id": 13,
+        "dL": 10,
+        "mode_con": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_13",
+        "Tower_head_id": 13,
+        "Tower_head_pos": [
+          700,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_14",
+        "Tower_tail_id": 14,
+        "Tower_tail_pos": [
+          760,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_13",
+          "node2": "X03_Tower_14",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_14",
+      "Info": {
+        "name": "OHL_14",
+        "type": "type_01",
+        "id": 14,
+        "dL": 10,
+        "mode_con": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_14",
+        "Tower_head_id": 14,
+        "Tower_head_pos": [
+          760,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_15",
+        "Tower_tail_id": 15,
+        "Tower_tail_pos": [
+          820,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_14",
+          "node2": "X03_Tower_15",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_15",
+      "Info": {
+        "name": "OHL_15",
+        "type": "type_01",
+        "id": 15,
+        "dL": 10,
+        "mode_con": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_15",
+        "Tower_head_id": 15,
+        "Tower_head_pos": [
+          820,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_16",
+        "Tower_tail_id": 16,
+        "Tower_tail_pos": [
+          880,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_15",
+          "node2": "X03_Tower_16",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_16",
+      "Info": {
+        "name": "OHL_16",
+        "type": "type_01",
+        "id": 16,
+        "dL": 10,
+        "mode_con": 0,
+         "mode_gnd": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_16",
+        "Tower_head_id": 16,
+        "Tower_head_pos": [
+          880,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_17",
+        "Tower_tail_id": 17,
+        "Tower_tail_pos": [
+          940,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_16",
+          "node2": "X03_Tower_17",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    },
+    {
+      "name": "OHL_17",
+      "Info": {
+        "name": "OHL_17",
+        "type": "type_01",
+        "id": 17,
+        "dL": 10,
+        "mode_con": 0,
+        "mode_gnd": 0,
+        "con_mode": 0,
+        "model2": 0,
+        "Tower_head": "tower_17",
+        "Tower_head_id": 17,
+        "Tower_head_pos": [
+          940,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_18",
+        "Tower_tail_id": 18,
+        "Tower_tail_pos": [
+          1000,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03_Tower_17",
+          "node2": "X03_Tower_18",
+          "node1_pos": [
+            0,
+            0,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 1E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 0,
+        "gnd_mode": 1,
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    }
+  ],
+
+
+  "Global": {
+    "delta_time": 6.666666666666667e-08,
+    "time": 1e-4,
+    "constant_frequency": 2e4,
+    "max_length": 60,
+    "global_ground": 1,
+    "ground": {
+      "glb": 0,
+      "sig": 0.01,
+      "mur": 1,
+      "epr": 10,
+      "gnd_mode": 1,
+      "ionisation_intensity": "",
+      "ionisation_model": ""
+    },
+    "GPU_calculation": 1,
+    "Hybrid_method": 1,
+    "Calculation_Model": 2,
+    "hybrid": 0
+  },
+
+  "Sensitivity_analysis":{
+    "Stroke": {
+      "position": [10,-0.4,10],
+      "area": "OHL_1",
+      "wire": null,
+      "cir_id": 3001,
+      "phase": "A",
+      "waveform": [],
+      "paramenters": []
+    },
+    "Soil": [],
+    "Arrester": {
+      "name": []
+    },
+    "SW": {
+      "name": []
+
+    },
+    "ROD": {
+      "tower": null,
+      "lump": null,
+      "r": null,
+      "l": null
+
+    },
+    "DE": null,
+    "ground": null
+
+  },
+  "MC": {
+    "surrounding_distance": 1000,
+    "MC_lgtn": {
+      "casemodel": 2,
+      "Dymax":1500,
+      "Dyp":100,
+      "pointmd":200,
+      "pn": 1500,
+      "mode": 2,
+      "fixn": 50000,
+      "Ip1stmin": 5,
+      "Ip1stmax": 200,
+      "tf1stmin": 0.5,
+      "tf1stmax": 20,
+      "Sm1stmin": 5,
+      "Sm1stmax": 30,
+      "th1stmin": 10,
+      "th1stmax": 500,
+      "Ipmin": 3,
+      "Ipmax": 75,
+      "tfmin": 0.1,
+      "tfmax": 20,
+      "Smmin": 5,
+      "Smmax": 30,
+      "thmin": 10,
+      "thmax": 500,
+      "lmu": [12.3, 0.67, 12, 30.2 ],
+      "lmuI": [31.1, 3.83, 12,77.5 ],
+       "mu": [ 2.50959926, -0.40047757,  2.48490665,  3.40784192],
+      "muI": [3.43720782, 1.3428648,  2.48490665, 4.35027794],
+      "muN": 0.5314789170422551,
+      "rhoi": [[ 0,    0.47,  0.36,  0.56],
+                [ 0,    0,  -0.21,  0.33],
+                [ 0,    0,    0,    0.1 ],
+                [ 0,    0,    0,    0  ]],
+      "sigma": [0.53,  1.013, 0.26,  0.933],
+      "sigma1st": [0.484, 0.553, 0.26,  0.577],
+      "sigmaN": 0.96,
+      "stroke": 1
+    },
+    "AR": {
+      "Phase1": [10,   0.65],
+      "Phase2": [5.5 , 0.65],
+      "buildingp": [10,    0.65],
+      "slopep": [8,   0.65]
+    },
+    "DSave": {
+      "userInput0": 1,
+      "userInput1": 1,
+      "userInput2": 1,
+      "userInput3": 1,
+      "userInput3d": 1,
+      "userInput3ind": 1,
+      "userInput4": 1,
+      "userInput4d": 1,
+      "userInput4ind": 1
+    },
+    "Record_SAF": 0
+
+  }
+
+
+}
