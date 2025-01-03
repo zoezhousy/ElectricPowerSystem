@@ -878,8 +878,10 @@ class Network:
                             if ohl["Info"]["name"] == area:
                                 for w in ohl["Wire"]:
                                     cir_id_ohl = w['cir_id']
-                                    phase_id_ohl = w['phase_id']
-                                    if cir_id_ohl == cir_id and phase_id_ohl == phase_id:
+                                    phase_id_ohl = w['phase']
+                                    trans = {0:"S",1:"A",2:"B",3:"C",4:"D",5:"E",6:"F"}
+                                    phase_id_ohl_trans = trans[phase_id_ohl]
+                                    if cir_id_ohl == cir_id and phase_id_ohl_trans == phase_id:
                                         z = w["node1_pos"][2]
                                         position = position_xy.append(z)
                                         if w['type'] == 'SW':
