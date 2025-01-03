@@ -282,7 +282,7 @@ class MC_Linear(Strategy):
         solution = pd.DataFrame(out,index=H["capacitance_matrix"].columns.tolist() + H["inductance_matrix"].columns.tolist())
         for x in tower_head_node:
             #if abs(np.max(out[H["capacitance_matrix"].columns.tolist().index(x[0]), :])) > 75000:
-            if np.max(abs(out[H["capacitance_matrix"].columns.tolist().index(x), :])) > 125000:
+            if np.max(abs(out[H["capacitance_matrix"].columns.tolist().index(x), :])) > 75000:
                 return True
         return  False
 
@@ -945,12 +945,12 @@ class hybrid_nonlinear(Hybrid_Strategy):
 
                 for i_nlr in range(len(itcal['NLR_index'])):
                     index_r = itcal['NLR_index'][i_nlr, 0]
-                    itcal['R'][index_r, index_r] = itcal['NLR_para'][i_nlr](abs(Ibran_t_n[index_r])) if Ibran_t_n[index_r] !=0 else 1e6
+                    itcal['R'][index_r, index_r] = itcal['NLR_para'][i_nlr](max(abs(Ibran_t_n[index_r]), 1e-2))
                 # 判断损坏代码
-                # v_diff = abs(Vnode_t_ref[itcal['NLR_index'][:, 1]] - Vnode_t_ref[itcal['NLR_index'][:, 2]])
-                # itcal['NLR_E'] += Ibran_t_n[itcal['NLR_index'][:, 0]] * v_diff * dt
-                # index_con = [itcal['NLR_bran'][dnlr[0]] for dnlr in argwhere(itcal['NLR_E'] >= 30000).tolist()]
-                # damaged_NLR.extend(index_con)
+                v_diff = abs(Vnode_t_ref[itcal['NLR_index'][:, 1]] - Vnode_t_ref[itcal['NLR_index'][:, 2]])
+                itcal['NLR_E'] += Ibran_t_n[itcal['NLR_index'][:, 0]] * v_diff * dt
+                index_con = [itcal['NLR_bran'][dnlr[0]] for dnlr in argwhere(itcal['NLR_E'] >= 30000).tolist()]
+                damaged_NLR.extend(index_con)
                 # if index_con:
                 #     break
 
@@ -974,7 +974,7 @@ class hybrid_nonlinear(Hybrid_Strategy):
         results = pd.concat([results_tower, result_v_ohl])
         results.drop_duplicates(inplace=True)
         results = results.add(result_i_ohl, fill_value=0).fillna(0)
-        others = {'SDEM': damaged_SDEM}
+        others = {'SDEM': damaged_SDEM,'NLR':damaged_NLR}
         return results, others
 
 

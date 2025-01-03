@@ -198,7 +198,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
             y = y_range[i]  # 当前区间的下限
             y_next = y_range[i + 1]  # 当前区间的上限
             # 计算当前y值区间内应生成的点数
-            points_for_this_y = int(pn * (y_next / 1000))  # 根据y距离调整密度
+            points_for_this_y = int(pn * ((y_next-y) / 1000))  # 根据y距离调整密度
             # 在x范围内均匀分布生成这些点
             x_for_this_y = np.random.uniform(xmin, xmax, points_for_this_y)
             y_for_this_y = np.random.uniform(y, y_next, points_for_this_y)  # 对应的y值

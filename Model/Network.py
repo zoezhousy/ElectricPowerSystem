@@ -527,7 +527,7 @@ class Network:
         ins_FO["FO"] = False
         if not self.switch_disruptive_effect_models and not self.voltage_controled_switchs and not self.time_controled_switchs and not self.nolinear_resistors:
             strategy = Strategy.MC_Linear()
-            solution =strategy.apply(T,dt,H,sources)
+            ins_FO =strategy.apply(T,dt,H,sources,tower_head_node)
         else:
             strategy = Strategy.SAF_NonLinear()
             solution,switch_disruptive_effect_models,SAF = strategy.apply(T,dt,H,sources)
@@ -829,7 +829,7 @@ class Network:
             df27,parameterst,stroke_result,PoleXY = run_MC(self,load_dict,Distance)
 
             MC_result_list = []
-            summary = {"FO":[],"Huri":[],"RunTime":[]}
+            summary = {"nonFO_indirect":0,"nonFO_direct":0,"FO_indirect":0,"FO_direct":0,"Huri":0,"RunTime":0}
             with Manager() as manager:
                 shared_dict = manager.dict()
                 index = 0
@@ -896,21 +896,34 @@ class Network:
                 if record_SAF==1:
                     self.Huri_method_SAF(MC_result, nodes, branches,shared_dict)
                 else:
-                    FO,huri = self.Huri_method_INS(MC_result, nodes, branches,shared_dict)
+                    FO_direct,FO_indirect,huri = self.Huri_method_INS(MC_result, nodes, branches,shared_dict)
                 end_time = time.time()  # 记录结束时间
                 duration = end_time - start_time  # 计算运行时长
-                true_count = len(list(filter(lambda x: x, FO)))
+                true_count_direct = len(list(filter(lambda x: x, FO_direct)))
+                false_count_direct = len(FO_direct) -true_count_direct
+                true_count_indirect = len(list(filter(lambda x: x, FO_indirect)))
+                false_count_indirect = len(FO_direct) - true_count_indirect
                 if len(parameterst) ==0:
-                    summary["FO"].append(None)
-                    summary["Huri"].append(None)
-                    summary["RunTime"].append(duration)
+                    summary["FO"]=None
+                    summary["Huri"]=None
+                    summary["RunTime"] = duration
 
-                summary["FO"].append(true_count/len(parameterst))
-                summary["Huri"].append(huri)
-                summary["RunTime"].append(duration)
-                print("FO: ", summary["FO"])
+                summary["FO_direct"] = summary["FO_direct"]+true_count_direct
+                summary["FO_indirect"] = summary["FO_indirect"] + true_count_indirect
+                summary["nonFO_direct"] = summary["nonFO_direct"]+false_count_direct
+                summary["nonFO_indirect"] = summary["nonFO_indirect"] + false_count_indirect
+                summary["Huri"] = huri
+                summary["RunTime"] = duration
+                print("FO_direct: ", summary["FO_direct"])
+                print("FO_indirect: ", summary["FO_indirect"])
+                print("nonFO_direct: ", summary["FO_direct"])
+                print("nonFO_indirect: ", summary["FO_indirect"])
                 print("Huri: ",summary["Huri"])
                 print("Running time: ",summary["RunTime"])  # 打印运行时长
+
+                df = pd.DataFrame(summary)
+                # 保存DataFrame到CSV文件
+                df.to_csv(f'Data/input/case3_nonlinear/summary_values.csv', index=False)
 
 
     def Pre_run_MC(self, load_dict):
@@ -978,7 +991,7 @@ class Network:
                             dt = self.dt
                             stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True,
                                             parameter_set=None,
-                                            parameters=[parameterst[index].tolist()[2]*1e3 ,
+                                            parameters=[parameterst[index].tolist()[2]*1e3/3 ,
                                                         parameterst[index].tolist()[3],
                                                         parameterst[index].tolist()[5], parameterst[index].tolist()[4]])
                             stroke.calculate()
@@ -1031,11 +1044,7 @@ class Network:
                     end_time = time.time()  # 记录结束时间
                     duration = end_time - start_time  # 计算运行时长
                     true_count = len(list(filter(lambda x: x, FO)))
-                    # if true_count <= 1:
-                    #     self.save_result(summary,path='Data/input/case2_linear/')
-                    #     Distance_max = len(summary["FO"])*100
-                    #     print("maximum distance is: ",Distance_max)
-                    #     return Distance_max
+
 
                     FO_num = FO_num+true_count
                     summary["FO"].append(FO_num)
@@ -1043,9 +1052,12 @@ class Network:
                     summary["RunTime"].append(duration)
 
                 self.save_result(summary,path='Data/input/case2_linear/')
-                Distance_max = len(summary["FO"]) * 100
-                print("maximum distance is: ", Distance_max)
-                return Distance_max
+
+            positions = [i+1 for i, (a, b) in enumerate(zip(summary["FO"], summary["FO"][1:])) if b - a < 1]
+            Distance_max = (positions[0]+1) * 100
+            print("maximum distance is: ", Distance_max)
+            print("total flash count: ", df27_list[-1].iloc[-1, 0])
+            return Distance_max
     def save_result(self,summary,path):
         print("FO: ", summary["FO"])
         print("Huri: ", summary["Huri"])
@@ -1185,7 +1197,8 @@ class Network:
     def Huri_method_INS(self,MC_result, nodes, branches,shared_dict):
         icurr = []
         dataset = []
-        FO = []
+        FO_indirect = []
+        FO_direct = []
         R = 100
         constants = Constant()
         constants.ep0 = 8.85e-12
@@ -1194,23 +1207,23 @@ class Network:
         huri = 0
         for MC in MC_result:
             if MC[0].type == "Direct":
-                #solution,ins = process_item(MC, nodes, branches, self,index,shared_dict,calculate_ins)
-                ins = process_item(MC, nodes, branches, self, index, shared_dict, calculate_ins)
+                #solution,ins = process_calculate(MC, nodes, branches, self,index,shared_dict,calculate_ins)
+                ins = process_calculate(MC, nodes, branches, self, index, shared_dict, calculate_ins)
                 index = index+1
                 #if ins["FO"]:
                 if ins:
-                    FO.append(ins)
+                    FO_direct.append(ins)
                 else:
-                    FO.append(False)
+                    FO_direct.append(False)
                 continue
             flash_position = MC[0].channel.hit_pos[:2]
             if len(dataset) == 0:
-                #solution, ins = process_item(MC, nodes, branches, self, index, shared_dict,calculate_ins)
-                ins = process_item(MC, nodes, branches, self, index, shared_dict, calculate_ins)
+                #solution, ins = process_calculate(MC, nodes, branches, self, index, shared_dict,calculate_ins)
+                ins = process_calculate(MC, nodes, branches, self, index, shared_dict, calculate_ins)
                 index = index + 1
                 #if ins["FO"]:
                 if ins:
-                    FO.append(ins)
+                    FO_indirect.append(ins)
                     continue
                 else:
                     distances = []
@@ -1222,7 +1235,7 @@ class Network:
                     PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
                         , closest_two[0][1], closest_two[1][1]]
                     dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
-                    FO.append(False)
+                    FO_indirect.append(False)
                     continue
             if len(dataset)>0:
                 #for i,stroke in enumerate(MC[0].strokes):
@@ -1230,7 +1243,7 @@ class Network:
                 icur = np.append(stroke.parameters,flash_position)
                 result = Huri_Method(R,dataset,icur)
                 if result ==1:
-                    FO.append(False)
+                    FO_indirect.append(False)
                     huri = huri+1
                     distances = []
                     for coord in list(self.PoleXY.values()):
@@ -1245,11 +1258,11 @@ class Network:
                     print("using Huri skip calculation")
                     continue
             #solution, ins = process_item(MC, nodes, branches, self, index, shared_dict,calculate_ins)
-            ins = process_item(MC, nodes, branches, self, index, shared_dict, calculate_ins)
+            ins = process_calculate(MC, nodes, branches, self, index, shared_dict, calculate_ins)
             index = index + 1
            # if ins["FO"]:
             if ins:
-                FO.append(ins)
+                FO_indirect.append(ins)
 
             else:
                 distances = []
@@ -1261,8 +1274,8 @@ class Network:
                 PoleApp = [closest_two[0][0][0],closest_two[0][0][1],closest_two[1][0][0],closest_two[1][0][1]
                                                 ,closest_two[0][1],closest_two[1][1]]
                 dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
-                FO.append(False)
-        return FO,huri
+                FO_indirect.append(False)
+        return FO_direct,FO_indirect,huri
 
     def Find_Dmax(self,MC_result, nodes, branches,shared_dict):
         icurr = []
@@ -1345,6 +1358,29 @@ class Network:
                 dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
                 FO.append(False)
         return FO,huri
+
+def process_calculate(MC, nodes, branches, self_ref,index,shared_dict,calculate_ins):
+    constants = Constant()
+    constants.ep0 = 8.85e-12
+    U_out, I_out,shared_dict = self_ref.source_calculate(MC[0], MC[1], MC[2], MC[3], nodes, branches,constants,shared_dict)
+    sources = self_ref.add_lump(U_out, I_out)
+    line_matrix = self_ref.H["Line"]
+    tower_matrix = self_ref.H["Tower"]
+    result_tower, ins_bran = self_ref.calculate_of_hybrid_mode(line_matrix, tower_matrix, sources, self_ref.Nt, self_ref.dt, self_ref.GPU_calculation)
+    print("calculate"+str(index))
+
+    ins = False
+    if len(ins_bran["SDEM"])>0:
+        ins = True
+        # 指定CSV文件名
+        filename = "Data/output/MC_ins.csv"
+        # 使用'a'模式打开文件，准备追加内容
+        with open(filename, 'a', newline='') as csvfile:
+            # 创建一个csv写入器
+            writer = csv.writer(csvfile)
+            writer.writerow(ins_bran["SDEM"])
+
+    return ins
 
 def process_item(MC, nodes, branches, self_ref,index,shared_dict,calculate_ins):
     constants = Constant()

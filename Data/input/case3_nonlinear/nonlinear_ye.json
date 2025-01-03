@@ -4149,9 +4149,9 @@
       ]
       },
     {
-      "name": "Tower_7",
+      "name": "tower_7",
       "Info": {
-        "name": "Tower_7",
+        "name": "tower_7",
         "id": "7",
         "type": "10",
         "Vclass": "10kV",
@@ -4596,9 +4596,9 @@
       ]
       },
     {
-      "name": "Tower_8",
+      "name": "tower_8",
       "Info": {
-        "name": "Tower_8",
+        "name": "tower_8",
         "id": "8",
         "type": "10",
         "Vclass": "10kV",
@@ -5767,9 +5767,9 @@
       ]
     },
     {
-      "name": "Tower_9",
+      "name": "tower_9",
       "Info": {
-        "name": "Tower_9",
+        "name": "tower_9",
         "id": "9",
         "type": "10",
         "Vclass": "10kV",
@@ -6214,9 +6214,9 @@
       ]
       },
     {
-      "name": "Tower_10",
+      "name": "tower_10",
       "Info": {
-        "name": "Tower_10",
+        "name": "tower_10",
         "id": "10",
         "type": "10",
         "Vclass": "10kV",
@@ -6661,9 +6661,9 @@
       ]
       },
     {
-      "name": "Tower_11",
+      "name": "tower_11",
       "Info": {
-        "name": "Tower_11",
+        "name": "tower_11",
         "id": "11",
         "type": "10",
         "Vclass": "10kV",
@@ -7832,9 +7832,9 @@
       ]
     },
     {
-      "name": "Tower_12",
+      "name": "tower_12",
       "Info": {
-        "name": "Tower_12",
+        "name": "tower_12",
         "id": "12",
         "type": "10",
         "Vclass": "10kV",
@@ -8279,9 +8279,9 @@
       ]
       },
     {
-      "name": "Tower_13",
+      "name": "tower_13",
       "Info": {
-        "name": "Tower_13",
+        "name": "tower_13",
         "id": "13",
         "type": "10",
         "Vclass": "10kV",
@@ -8726,9 +8726,9 @@
       ]
       },
     {
-      "name": "Tower_14",
+      "name": "tower_14",
       "Info": {
-        "name": "Tower_14",
+        "name": "tower_14",
         "id": "14",
         "type": "10",
         "Vclass": "10kV",
@@ -9897,9 +9897,9 @@
       ]
     },
     {
-      "name": "Tower_15",
+      "name": "tower_15",
       "Info": {
-        "name": "Tower_15",
+        "name": "tower_15",
         "id": "15",
         "type": "10",
         "Vclass": "10kV",
@@ -10344,9 +10344,9 @@
       ]
       },
     {
-      "name": "Tower_16",
+      "name": "tower_16",
       "Info": {
-        "name": "Tower_16",
+        "name": "tower_16",
         "id": "16",
         "type": "10",
         "Vclass": "10kV",
@@ -10791,9 +10791,9 @@
       ]
       },
     {
-      "name": "Tower_17",
+      "name": "tower_17",
       "Info": {
-        "name": "Tower_17",
+        "name": "tower_17",
         "id": "17",
         "type": "10",
         "Vclass": "10kV",
@@ -11962,7 +11962,7 @@
       ]
     },
     {
-      "name": "Tower_18",
+      "name": "tower_18",
       "Info": {
         "name": "tower_18",
         "id": "18",
@@ -15379,8 +15379,8 @@
 ,
 
   "Global": {
-    "delta_time": 1.666666666666667e-08,
-    "time": 2e-5,
+    "delta_time": 6.666666666666667e-08,
+    "time": 1e-4,
     "constant_frequency": 2e4,
     "max_length": 60,
     "global_ground": 1,
@@ -15393,7 +15393,7 @@
       "ionisation_model": ""
     },
     "GPU_calculation": 0,
-    "Hybrid_method": 0
+    "Hybrid_method": 1
   },
   "Sensitivity_analysis":{
     "Stroke": {
@@ -15431,9 +15431,9 @@
       "Dymax":1500,
       "Dyp":100,
       "pointmd":200,
-      "pn": 10,
+      "pn": 1000,
       "mode": 2,
-      "fixn": 100,
+      "fixn": 1000,
       "Ip1stmin": 5,
       "Ip1stmax": 200,
       "tf1stmin": 0.5,
