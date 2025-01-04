@@ -858,6 +858,15 @@ class Network:
                     position_xy = stroke_result[8][index - 1]
                     position = None
                     wire = None
+                    if phase_id == 0:
+                        phase_lgt = 'S'
+                    elif phase_id == 1:
+                        phase_lgt = 'A'
+                    elif phase_id == 2:
+                        phase_lgt = 'B'
+                    else:
+                        phase_lgt = 'C'
+
                     if area == 0:
                         area = "Ground"
                         position = position_xy.append(0)
@@ -878,8 +887,8 @@ class Network:
                             if ohl["Info"]["name"] == area:
                                 for w in ohl["Wire"]:
                                     cir_id_ohl = w['cir_id']
-                                    phase_id_ohl = w['phase_id']
-                                    if cir_id_ohl == cir_id and phase_id_ohl == phase_id:
+                                    phase_id_ohl = w['phase']
+                                    if cir_id_ohl == cir_id and phase_id_ohl == phase_lgt:
                                         z = w["node1_pos"][2]
                                         position = position_xy.append(z)
                                         if w['type'] == 'SW':

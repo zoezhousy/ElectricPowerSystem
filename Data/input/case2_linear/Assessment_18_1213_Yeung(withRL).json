@@ -34,7 +34,7 @@
           "bran": "Y01_Tower_1",
           "probe": null,
           "node1": "X01_Tower_1",
-          "node2": "X02_Tower_1",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -43,7 +43,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -68,7 +68,6 @@
         }
       ],
       "Lump": [
-
         {
           "Type": "MTCK",
           "name": "MTCK",
@@ -137,7 +136,7 @@
           "bran": "Y01_Tower_2",
           "probe": null,
           "node1": "X01_Tower_2",
-          "node2": "X02_Tower_2",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -146,7 +145,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -224,7 +223,7 @@
           "bran": "Y01_Tower_3",
           "probe": null,
           "node1": "X01_Tower_3",
-          "node2": "X02_Tower_3",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -233,7 +232,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -311,7 +310,7 @@
           "bran": "Y01_Tower_4",
           "probe": null,
           "node1": "X01_Tower_4",
-          "node2": "X02_Tower_4",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -320,7 +319,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -398,7 +397,7 @@
           "bran": "Y01_Tower_5",
           "probe": null,
           "node1": "X01_Tower_5",
-          "node2": "X02_Tower_5",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -407,7 +406,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -485,7 +484,7 @@
           "bran": "Y01_Tower_6",
           "probe": null,
           "node1": "X01_Tower_6",
-          "node2": "X02_Tower_6",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -494,7 +493,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -572,7 +571,7 @@
           "bran": "Y01_Tower_7",
           "probe": null,
           "node1": "X01_Tower_7",
-          "node2": "X02_Tower_7",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -581,7 +580,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -658,7 +657,7 @@
           "bran": "Y01_Tower_8",
           "probe": null,
           "node1": "X01_Tower_8",
-          "node2": "X02_Tower_8",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -667,7 +666,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -744,7 +743,7 @@
           "bran": "Y01_Tower_9",
           "probe": null,
           "node1": "X01_Tower_9",
-          "node2": "X02_Tower_9",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -753,7 +752,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -831,7 +830,7 @@
           "bran": "Y01_Tower_10",
           "probe": null,
           "node1": "X01_Tower_10",
-          "node2": "X02_Tower_10",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -840,7 +839,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -917,7 +916,7 @@
           "bran": "Y01_Tower_11",
           "probe": null,
           "node1": "X01_Tower_11",
-          "node2": "X02_Tower_11",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -926,7 +925,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -1004,7 +1003,7 @@
           "bran": "Y01_Tower_12r",
           "probe": null,
           "node1": "X01_Tower_12",
-          "node2": "X02_Tower_12",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -1013,7 +1012,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -1090,7 +1089,7 @@
           "bran": "Y01_Tower_13",
           "probe": null,
           "node1": "X01_Tower_13",
-          "node2": "X01_Tower_13",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -1099,7 +1098,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -1176,7 +1175,7 @@
           "bran": "Y01_Tower_14",
           "probe": null,
           "node1": "X01_Tower_14",
-          "node2": "X02_Tower_14",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -1185,7 +1184,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -1263,7 +1262,7 @@
           "bran": "Y01_Tower_15",
           "probe": null,
           "node1": "X01_Tower_15",
-          "node2": "X02_Tower_15",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -1272,7 +1271,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -1349,7 +1348,7 @@
           "bran": "Y01_Tower_16",
           "probe": null,
           "node1": "X01_Tower_16",
-          "node2": "X02_Tower_16",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -1358,7 +1357,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -1436,7 +1435,7 @@
           "bran": "Y01_Tower_17",
           "probe": null,
           "node1": "X01_Tower_17",
-          "node2": "X02_Tower_17",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -1445,7 +1444,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -1523,7 +1522,7 @@
           "bran": "Y01_Tower_18",
           "probe": null,
           "node1": "X01_Tower_18",
-          "node2": "X02_Tower_18",
+          "node2": "ref",
           "pos_1": [
             0,
             0,
@@ -1532,7 +1531,7 @@
           "pos_2": [
             0,
             0,
-            9.8
+            0
           ],
           "oft": 0,
           "r0": 0.005,
@@ -1602,7 +1601,6 @@
         "type": "type_01",
         "id": 1,
         "dL": 10,
-        "con_mode": 0,
         "con_mode": 0,
         "model2": 0,
         "Tower_head": "tower_1",
