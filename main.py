@@ -11,7 +11,8 @@ import pandas as pd
 if __name__ == '__main__':
     # 1. 接收到创建新电网指令
     #file_name = "01_8_ye"
-    file_name = "case2_linear/Assessment_18_1213_Yeung(withRL)"
+    # file_name = "case2_linear/Assessment_simple"
+    file_name = "case3_nonlinear/nonlinear_simple3"
     #file_name = "case3_nonlinear/nonlinear"
     json_file_path = "Data/input/" + file_name + ".json"
     # 0. read json file
@@ -37,10 +38,10 @@ if __name__ == '__main__':
        # distance = network.Pre_run_MC(load_dict)
         network = Network()
         distance = 500
-        file_name = "case3_nonlinear/nonlinear_ye"
-        json_file_path = "Data/input/" + file_name + ".json"
-        with open(json_file_path, 'r', encoding="utf-8") as j:
-            load_dict = json.load(j)
+        # file_name = "case3_nonlinear/nonlinear_OHL"
+        # json_file_path = "Data/input/" + file_name + ".json"
+        # with open(json_file_path, 'r', encoding="utf-8") as j:
+        #     load_dict = json.load(j)
         network.run_MC(load_dict,distance)
 
 

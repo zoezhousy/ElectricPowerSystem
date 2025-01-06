@@ -169,7 +169,7 @@ class NonLinear(Strategy):
         ima = H["incidence_matrix_A"].to_numpy()  # 线点
         imb = H["incidence_matrix_B"].T.to_numpy()  # 点线
 
-        for i in range(Nt - 1):
+        for i in tqdm(range(Nt - 1)):
             #stroke_index = (i+1)//stroke_len
 
             Vnode = out[:nodes, i]
@@ -699,7 +699,7 @@ class hybrid_linear(Hybrid_Strategy):
                 Vout_ohl[itcal['ohl_cross_index'], i + 1] = temp_result[itcal['tower_cross_index']]
 
             # ohl solution
-            Iout_ohl[:, i + 1] = inv_RL_o @ (LdeR @ Iout_ohl[:, i] - im_o @ Vout_ohl[:, i + 1] + vs_o[:, i + 1])
+            Iout_ohl[:, i + 1] = inv_RL_o @ (LdeR @ Iout_ohl[:, i] - im_o @ Vout_ohl[:, i + 1] - vs_o[:, i + 1])
             Vout_ohl[:, i + 2] = inv_GC_o @ (CdeG @ Vout_ohl[:, i + 1] + im_o.T @ Iout_ohl[:, i + 1] + is_o[:, i + 1])
 
             I_allcross = im_o.T @ Iout_ohl[:, i + 1]

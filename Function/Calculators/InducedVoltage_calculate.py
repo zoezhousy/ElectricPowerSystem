@@ -11,6 +11,7 @@ from Utils.Math import calculate_H_magnetic_field_down_r
 from Utils.Math import calculate_electric_field_down_r_and_z
 import pandas as pd
 import math
+from copy import deepcopy
 
 def distance(node1, node2):
     return math.sqrt((node1.x - node2[0]) ** 2 +
@@ -43,7 +44,13 @@ def LightningCurrent_calculate(p1, p2, position, network, node_index, lightning,
                              wire.name.split("_")[0] == p2.split("_")[0]]
 
         elif area == "OHL":
-            selected_ohl = [ohl for ohl in network.OHLs if ohl.name == p1]
+            selected_ohl = []
+            max_length = network.max_length
+            for ohl in network.OHLs:
+                if ohl.name == p1:
+                    ohl_splited = deepcopy(ohl)
+                    ohl_splited.wires.split_long_wires_all(max_length)
+                    selected_ohl.append(ohl_splited)
             selected_wire = [wire for wire in list(selected_ohl[0].wires.get_all_wires().values()) if
                              wire.name.split("_")[0] == p2.split("_")[0]]
             #all_node = [wire for wire in list(selected_ohl[0].wires.get_all_nodes())]
