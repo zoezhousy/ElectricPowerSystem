@@ -94,6 +94,7 @@ def segment_branch(network_branches):
     【功能】对于传进来的branches，按照读取的Nt进行分段
     """
     branches = network_branches.copy()  # branches的副本，用于新增或删减支路
+    OHL_new_nodes = []
     for key, value in network_branches.items():
         # key是支路， value是起点，终点，分段数
         keys_tobe_delete = []
@@ -104,15 +105,17 @@ def segment_branch(network_branches):
             x = np.linspace(start_node_coord[0], end_node_coord[0], value[3] + 1, dtype=float)
             y = np.linspace(start_node_coord[1], end_node_coord[1], value[3] + 1, dtype=float)
             z = np.linspace(start_node_coord[2], end_node_coord[2], value[3] + 1, dtype=float)
-            new_nodes_name = [key + '_MiddleNode_{:02d}'.format(i) for i in range(1, value[3])]
+            new_nodes_name = [f"{key}_MiddleNode_{i}".format(i) for i in range(1, value[3])]
             new_nodes_name.insert(0, list(value[0].keys())[0])
             new_nodes_name.append(list(value[1].keys())[0])
+            OHL_new_nodes.extend(new_nodes_name)
             for i in range(len(new_nodes_name) - 1):
                 start_node_after_seg_dict = {new_nodes_name[i]: [x[i], y[i], z[i]]}
                 end_node_after_seg_dict = {new_nodes_name[i+1]: [x[i+1], y[i+1], z[i+1]]}
+
                 branches[f"{key}_Splited_{i+1}"] = [start_node_after_seg_dict, end_node_after_seg_dict, value[2], value[3]]
             del branches[key]
-    return branches
+    return branches,set(OHL_new_nodes)
 
 
 def calculate_distances_between_lineseg_and_channelseg(points_a, points_b):

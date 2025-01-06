@@ -1144,7 +1144,7 @@
       "ionisation_intensity": "",
       "ionisation_model": ""
     },
-    "Calculation_Model": 0,
+    "Calculation_Model": 2,
     "GPU_calculation": 0,
     "Hybrid_method": 1
   },

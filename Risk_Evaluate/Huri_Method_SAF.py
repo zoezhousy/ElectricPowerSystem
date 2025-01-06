@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def Huri_Method (R,dataset, datanew):
+def Huri_Method_SAF (R,dataset, datanew):
     result = 0
     if not dataset:
         result = 1

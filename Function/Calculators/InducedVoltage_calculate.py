@@ -44,13 +44,7 @@ def LightningCurrent_calculate(p1, p2, position, network, node_index, lightning,
                              wire.name.split("_")[0] == p2.split("_")[0]]
 
         elif area == "OHL":
-            selected_ohl = []
-            max_length = network.max_length
-            for ohl in network.OHLs:
-                if ohl.name == p1:
-                    ohl_splited = deepcopy(ohl)
-                    ohl_splited.wires.split_long_wires_all(max_length)
-                    selected_ohl.append(ohl_splited)
+            selected_ohl = [ohl for ohl in network.OHLs if ohl.name == p1]
             selected_wire = [wire for wire in list(selected_ohl[0].wires.get_all_wires().values()) if
                              wire.name.split("_")[0] == p2.split("_")[0]]
             #all_node = [wire for wire in list(selected_ohl[0].wires.get_all_nodes())]

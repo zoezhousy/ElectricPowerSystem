@@ -15392,8 +15392,8 @@
       "ionisation_intensity": "",
       "ionisation_model": ""
     },
-    "GPU_calculation": 0,
-    "Calculation_Model": 0,
+    "GPU_calculation": 1,
+    "Calculation_Model": 2,
     "Hybrid_method": 1
   },
   "Sensitivity_analysis":{

@@ -2820,7 +2820,7 @@
       "ionisation_intensity": "",
       "ionisation_model": ""
     },
-    "GPU_calculation": 1,
+    "GPU_calculation": 0,
     "Hybrid_method": 1,
     "Calculation_Model": 2,
     "hybrid": 0
