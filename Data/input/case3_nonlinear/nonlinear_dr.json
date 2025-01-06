@@ -132,6 +132,22 @@
           "value5": null,
           "pointer": null,
           "comments": null
+        },
+        {
+          "Type": "Is",
+          "name": "Is",
+          "probe": null,
+          "bran_name": "---",
+          "node1": "Y3001A_OHL_1_MiddleNode_1",
+          "node2": "ref",
+          "data_type": 1,
+          "value1": 0,
+          "value2": 10e3,
+          "value3": 30e3,
+          "value4": null,
+          "value5": 0,
+          "pointer": null,
+          "comments": null
         }
       ],
       "Device": [
@@ -521,28 +537,6 @@
   ],
   "Source":
     {
-      "Lightning": {
-      "type": "Indirect",
-        "area": "tower_1",
-        "wire": "Y01",
-        "cir_id": null,
-        "phase_id": null,
-        "position": [
-          100,
-          100,
-          0
-         ],
-        "model": "MTLE",
-        "stroke_num": 1,
-        "Stroke": [
-          {
-            "type": "Heidler",
-            "duration": 2e-5,
-            "parameters": [1e4, 8, 20, 2.4],
-            "parameter_set": "2.6/50us"
-          }
-        ]
-    }
     }
 ,
 
@@ -562,7 +556,7 @@
     },
     "GPU_calculation": 0,
         "Calculation_Model": 0,
-    "Hybrid_method": 1
+    "Hybrid_method": 0
   },
   "Sensitivity_analysis":{
     "Stroke": {

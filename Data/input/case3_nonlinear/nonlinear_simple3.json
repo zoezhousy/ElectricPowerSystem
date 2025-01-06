@@ -1106,15 +1106,15 @@
   "Source":
     {
           "Lightning": {
-      "type": "Direct",
+      "type": "Indirect",
         "area": "tower_1",
         "wire": "Y01",
-        "cir_id": null,
-        "phase_id": null,
+        "cir_id": 3001,
+        "phase_id": "A",
         "position": [
-          0,
-          0,
-          10.5
+          100,
+          100,
+          0
          ],
         "model": "MTLE",
         "stroke_num": 1,
@@ -1134,7 +1134,7 @@
     "delta_time": 6.666666666666667e-08,
     "time": 1e-4,
     "constant_frequency": 2e4,
-    "max_length": 30,
+    "max_length": 20,
     "global_ground": 1,
     "ground": {
       "sig": 0.01,
@@ -1144,7 +1144,7 @@
       "ionisation_intensity": "",
       "ionisation_model": ""
     },
-    "Calculation_Model": 2,
+    "Calculation_Model": 0,
     "GPU_calculation": 0,
     "Hybrid_method": 1
   },

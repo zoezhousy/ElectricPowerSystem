@@ -169,7 +169,7 @@ class NonLinear(Strategy):
         ima = H["incidence_matrix_A"].to_numpy()  # 线点
         imb = H["incidence_matrix_B"].T.to_numpy()  # 点线
 
-        for i in range(Nt - 1):
+        for i in tqdm(range(Nt - 1)):
             #stroke_index = (i+1)//stroke_len
 
             Vnode = out[:nodes, i]

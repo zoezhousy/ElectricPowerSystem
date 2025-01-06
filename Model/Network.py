@@ -152,7 +152,8 @@ class Network:
         branches, tb = self.tower_branches(branches)
         branches, ob = self.OHL_branches(branches, maxlength)
         branches, cb = self.cable_branches(branches, maxlength)
-        return branches
+        nodes = tb.union(ob).union(cb)
+        return branches, list(nodes)
 
     def tower_initial(self, load_dict):
         if 'Tower' in load_dict:
@@ -242,7 +243,7 @@ class Network:
 
     def source_initial(self, load_dict, nodes, branches, constants, share_dict):
 
-        if load_dict["Source"]["Lightning"]:
+        if 'Source' in load_dict and "Lightning" in load_dict['Source']:
             light = load_dict["Source"]["Lightning"]
             lightning = initial_lightning(light, dt=self.dt)
 
@@ -273,7 +274,7 @@ class Network:
                     U_out = U_out.add(model.voltage_source_matrix, fill_value=0).fillna(0)
                     I_out = I_out.add(model.current_source_matrix, fill_value=0).fillna(0)
             sources = pd.concat([U_out, I_out], axis=0)
-            return sources,len(lightning.strokes)
+            return sources, []
 
 
     # 输出U/I
@@ -658,13 +659,14 @@ class Network:
         line_matrix = self.line_individual_matrix() # 合并cable和OHL矩阵
 
         # tower_branches, tower_nodes, tower_or_lump_nodes, tower_and_line_nodes = self.nodes_of_hybrid_mode()
-        tower_branches = {}
-        tower_branches, tower_nodes = self.tower_branches(tower_branches)
-        tower_nodes.discard('ref')
+        branches, nodes = self.calculate_branches(self.max_length)
+        # nodes = self.capacitance_matrix.columns.tolist()
 
+        # 3. 初始化源，计算结果
         share_dict = {}
-        # 3. tower - source calculate
-        sources,stroke_len = self.source_initial(load_dict, list(tower_nodes), tower_branches, constants, share_dict)
+        constants = Constant()
+        sources,stroke_num = self.source_initial(load_dict, nodes,branches,constants,share_dict)
+
         self.H = {"Line": line_matrix,"Tower": tower_matrix}
         result_tower, other = self.calculate_of_hybrid_mode(line_matrix, tower_matrix, sources, self.Nt, self.dt, self.GPU_calculation)
 
@@ -703,8 +705,8 @@ class Network:
 
         # 2. 保存支路节点信息(for source calculate)
         # 合并计算的时候是这样设置
-        branches = self.calculate_branches(self.max_length)
-        nodes = self.capacitance_matrix.columns.tolist()
+        branches, nodes = self.calculate_branches(self.max_length)
+        # nodes = self.capacitance_matrix.columns.tolist()
 
         # 3. 初始化源，计算结果
         share_dict = {}
@@ -715,7 +717,7 @@ class Network:
         print(f"Total running time: {end - start_time} seconds")  # 打印运行时长
         solution = self.calculate(self.Nt, self.dt, self.H, sources)
         end2 = time.time()  # 记录开始时间
-        pd.DataFrame(solution).to_csv("Data/Output/combine_output.csv")
+        pd.DataFrame(solution[0]).to_csv("Data/Output/combine_output.csv")
         print(f"Total running time: {end2 - end} seconds")  # 打印运行时长
         print(solution)
 
