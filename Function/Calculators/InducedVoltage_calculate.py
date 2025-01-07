@@ -18,6 +18,7 @@ def distance(node1, node2):
                      (node1.y - node2[1]) ** 2 +
                      (node1.z - node2[2]) ** 2)
 
+#直接，间接雷 电流计算
 def LightningCurrent_calculate(p1, p2, position, network, node_index, lightning, stroke_sequence):
     """
     【功能】
@@ -78,8 +79,10 @@ def LightningCurrent_calculate(p1, p2, position, network, node_index, lightning,
         return I_out
 
 def InducedVoltage_calculate_direct(branch_list,lightning,stroke_sequence):
+    #直击雷，电压源0
     Uout = pd.DataFrame(0, index=branch_list, columns=range(lightning.strokes[stroke_sequence].Nt), dtype=np.float64)
     return Uout
+#间接雷，电压源计算感应电动势
 def InducedVoltage_calculate_indirect(pt_start, pt_end, branch_list, lightning: Lightning, stroke_sequence,Er_lossy,Ez_lossy):
     # Ez_T, Er_T = ElectricField_calculate(pt_start, pt_end, lightning.strokes[stroke_sequence], lightning.channel,
     #                                      constants.ep0, constants.vc)  # 计算电场

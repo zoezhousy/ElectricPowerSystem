@@ -26,6 +26,7 @@ def Lightning_stroke_location(Line, resultcur, DSave, foldname, resultedge,AR):
     Phase2 = AR['Phase2']
     slopep = AR['slopep']
     buildingp = AR['buildingp']
+    polestate = Line['polestate']
 
 
     # python特定排序从0开始
@@ -119,9 +120,9 @@ def Lightning_stroke_location(Line, resultcur, DSave, foldname, resultedge,AR):
     # EGM model
     # 判断每个点points_need雷击点的位置-stroke_result
     stroke_position = []
-    stroke_height = [] #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    stroke_r = []  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    stroke_distance = []  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    stroke_height = [] # 判断的吸引位置的高度!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    stroke_r = []  # 判断的吸引位置的吸引半径!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    stroke_distance = []  # 待判断的落雷点到判断的吸引位置的距离 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     stroke_point = []
     for i in range(points_need.shape[0]):
         P = points_need[i, :]  # 待判断的落雷点
@@ -725,74 +726,94 @@ def Lightning_stroke_location(Line, resultcur, DSave, foldname, resultedge,AR):
 
     # 判断直接雷的落雷点是Tower/Span-segment_position,落雷点坐标-point_medium
     # 把有关系的这条线段的sw或者pc分为几等分，判断点落在几等分的哪个等分段-segmentID
+    # if 杆子的端点的高度（pole）最大，且待判断的落雷点到杆子的距离最小，且polestate=0时，1-被吸引位置是杆子的端点（pole），2-其它位置
     for i in range(points_need.shape[0]):
         if stroke_position[i][0] == "Direct":
             P = points_need[i, :]  # 待判断的落雷点
-            line_segment = stroke_point[i]
-            A, B = line_segment[0, :], line_segment[1, :]
-            AP = P - A
-            AB = B - A
-            # 判断点落在segments等分的哪个等分段
-            # 点P到线段AB的垂直交点G
-            t = np.dot(AP, AB) / np.dot(AB, AB)
-            G = A + t * AB
-            stroke_point[i] = np.array([G[0], G[1]])
-            # 落雷点会被吸引落在（segments+1）个点中离得最近的点
-            ABsegment = esegment[i]
-            if ABsegment == 1:
-                # 计算点 P 与端点A,B的距离
-                point_text = np.array([A, B])
-                distances = np.sqrt((point_text[:, 0] - G[0]) ** 2 + (point_text[:, 1] - G[1]) ** 2)
-                # 找到距离最近的点的坐标-nearest_point
+            dmin_index = dmin_all[i]
+            #杆子的端点的高度
+            poleheigh=OHLPf[dmin_index][0] [0, 2]
+            # 杆子两端的端点
+            poleA, poleB = origin_line[dmin_index][0], origin_line[dmin_index][1]  # 线段的端点
+            # 待判断的落雷点到杆子两端端点的距离
+            dpoleA = np.sqrt((P[0] - poleA[0]) ** 2 + (P[1] - poleA[1]) ** 2)
+            dpoleB = np.sqrt((P[0] - poleB[0]) ** 2 + (P[1] - poleB[1]) ** 2)
+            dpole = np.array([dpoleA, dpoleB])
+            dpoleindex=np.argmin(dpole)
+            if poleheigh>=stroke_height[i] and dpole[dpoleindex] <=stroke_distance[i] and polestate[Edges[dmin_index, dpoleindex]]==0:
                 segment_position[i] = 1
-                segmentID[i] = 1
-                min_distance, min_index = distances.min(), distances.argmin()
-                if min_index == 0:
-                    dmin_allID[i] = Edges[dmin_all[i], 0]
-                else:
-                    dmin_allID[i] = Edges[dmin_all[i], 1]
-
-                nearest_point = point_text[min_index, :]
-                point_medium[i] = nearest_point
+                segmentID[i]=np.nan
+                point_medium[i] =origin_line[dmin_index][dpoleindex]
+                dmin_allID[i] = Edges[dmin_index, dpoleindex] # 杆子端点的ID
             else:
-                TAB = np.linalg.norm(AB)  # 计算总长度
-                PerTAB = TAB / ABsegment  # 每段的长度
-                # 初始化存储点的数组
-                segments_points = np.zeros(((int(ABsegment) - 1), 2))
-                # 计算每段的点
-                for ise in range((int(ABsegment) - 1)):
-                    t = (ise + 1) / ABsegment
-                    segments_points[ise, 0] = A[0] + t * (B[0] - A[0])
-                    segments_points[ise, 1] = A[1] + t * (B[1] - A[1])
+                segment_position[i] = 2
+                line_segment = stroke_point[i]
+                A, B = line_segment[0, :], line_segment[1, :]
+                AP = P - A
+                AB = B - A
+                # 判断点落在segments等分的哪个等分段
+                # 点P到线段AB的垂直交点G
+                t = np.dot(AP, AB) / np.dot(AB, AB)
+                G = A + t * AB
+                stroke_point[i] = np.array([G[0], G[1]])
+                # 落雷点会被吸引落在（segments+1）个点中离得最近的点
+                ABsegment = esegment[i]
+                if ABsegment == 1:
+                    # 计算点 P 与端点A,B的距离
+                    point_text = np.array([A, B])
+                    distances = np.sqrt((point_text[:, 0] - G[0]) ** 2 + (point_text[:, 1] - G[1]) ** 2)
+                    # 找到距离最近的点的坐标-nearest_point
+                    #segment_position[i] = 1
+                    segmentID[i] = 1
+                    min_distance, min_index = distances.min(), distances.argmin()
+                    dmin_allID[i] = dmin_all[i]  # 被吸引到的线的ID
+                    # if min_index == 0:
+                    #     dmin_allID[i] = Edges[dmin_all[i], 0]
+                    # else:
+                    #     dmin_allID[i] = Edges[dmin_all[i], 1]
 
-                # 计算点 P 与所有点的距离
-                point_text = np.vstack([A, B, segments_points])
-                distances = np.sqrt((point_text[:, 0] - G[0]) ** 2 + (point_text[:, 1] - G[1]) ** 2)
-                # 找到距离最近的点的坐标-nearest_point
-                min_distance, min_index = distances.min(), distances.argmin()
-                nearest_point = point_text[min_index, :]
-                # 两端是Tower,中间的点是Span
-                if min_index == 0:
-                    segment_position[i] = 1
-                    dmin_allID[i] = Edges[dmin_all[i], 0]
-                elif min_index == 1:
-                    segment_position[i] = 1
-                    dmin_allID[i] = Edges[dmin_all[i], 1]
+                    nearest_point = point_text[min_index, :]
+                    point_medium[i] = nearest_point
                 else:
-                    segment_position[i] = 2
-                    dmin_allID[i] = dmin_all[i]
+                    TAB = np.linalg.norm(AB)  # 计算总长度
+                    PerTAB = TAB / ABsegment  # 每段的长度
+                    # 初始化存储点的数组
+                    segments_points = np.zeros(((int(ABsegment) - 1), 2))
+                    # 计算每段的点
+                    for ise in range((int(ABsegment) - 1)):
+                        t = (ise + 1) / ABsegment
+                        segments_points[ise, 0] = A[0] + t * (B[0] - A[0])
+                        segments_points[ise, 1] = A[1] + t * (B[1] - A[1])
 
-                point_medium[i] = nearest_point
-                point_text2 = np.vstack([A, segments_points, B])
-                point_text2_x = point_text2[:, 0]
-                seg_id = np.where((G[0] >= point_text2_x[:-1]) & (G[0] <= point_text2_x[1:]))[0]
-                if seg_id.size > 0:
-                    segmentID[i] = seg_id[0]
-                else:
-                    if nearest_point.all() == A.all():
-                        segmentID[i] = 1
+                    # 计算点 P 与所有点的距离
+                    point_text = np.vstack([A, B, segments_points])
+                    distances = np.sqrt((point_text[:, 0] - G[0]) ** 2 + (point_text[:, 1] - G[1]) ** 2)
+                    # 找到距离最近的点的坐标-nearest_point
+                    min_distance, min_index = distances.min(), distances.argmin()
+                    nearest_point = point_text[min_index, :]
+                    dmin_allID[i] = dmin_all[i] #被吸引到的线的ID
+                    # # 两端是Tower,中间的点是Span
+                    # if min_index == 0:
+                    #     segment_position[i] = 1
+                    #     dmin_allID[i] = Edges[dmin_all[i], 0]
+                    # elif min_index == 1:
+                    #     segment_position[i] = 1
+                    #     dmin_allID[i] = Edges[dmin_all[i], 1]
+                    # else:
+                    #     segment_position[i] = 2
+                    #     dmin_allID[i] = dmin_all[i]
+
+                    point_medium[i] = nearest_point
+                    point_text2 = np.vstack([A, segments_points, B])
+                    point_text2_x = point_text2[:, 0]
+                    seg_id = np.where((G[0] >= point_text2_x[:-1]) & (G[0] <= point_text2_x[1:]))[0]
+                    if seg_id.size > 0:
+                        segmentID[i] = seg_id[0]
                     else:
-                        segmentID[i] = ABsegment
+                        if nearest_point.all() == A.all():
+                            segmentID[i] = 1
+                        else:
+                            segmentID[i] = ABsegment
 
     # stroke_position是判断直接雷(Dierect)/间接雷(Indirect),（sw/pc）/（ground）,sw/pc的circle_ID,pc对应#相的phase_ID,conductor_ID;
     # stroke_point是落雷点的最终位置（ground(间接雷)-坐标不变,显示NaN，sw/pc(直接雷)-点到线段的垂直交点;
@@ -909,17 +930,21 @@ def Lightning_stroke_location(Line, resultcur, DSave, foldname, resultedge,AR):
     y_coordinates = [coord[1] for coord in coordinates]
     # 创建颜色映射矩阵，根据 c 的值选择对应的颜色
     # 归一化 counts 到 [0, 1] 范围
-    min_count = min(counts)
-    max_count = max(counts) + 1e-7
-    c = [(count - min_count) / (max_count - min_count) for count in counts]
-    # 创建散点图
-    plt.figure(4)
-    plt.scatter(points_need[:, 0], points_need[:, 1], 1, 'k', label='points_need')
-    scatter = plt.scatter(x_coordinates, y_coordinates, 50, c, cmap='jet', label='point_medium', alpha=0.6)
-    plt.colorbar(scatter)  # 显示颜色条
-    plt.xlabel('Horizontal distance (m)')
-    plt.ylabel('Vertical distance (m)')
-    plt.title(f'Maximum number of lightning strikes: {max(counts)}')  # 标题解释最多次数的直接雷的落雷点的次数，即1代表多少次数
+    min_count = 0
+    max_count = 0
+    if len(counts)>0:
+        min_count = min(counts)
+        max_count = max(counts) + 1e-7
+        c = [(count - min_count) / (max_count - min_count) for count in counts]
+        # 创建散点图
+        plt.figure(4)
+        plt.scatter(points_need[:, 0], points_need[:, 1], 1, 'k', label='points_need')
+        scatter = plt.scatter(x_coordinates, y_coordinates, 50, c, cmap='jet', label='point_medium', alpha=0.6)
+        plt.colorbar(scatter)  # 显示颜色条
+        plt.xlabel('Horizontal distance (m)')
+        plt.ylabel('Vertical distance (m)')
+        plt.title(f'Maximum number of lightning strikes: {max(counts)}')  # 标题解释最多次数的直接雷的落雷点的次数，即1代表多少次数
+
     plt.show()
 
     # # 输出分类次数的txt格式

@@ -190,7 +190,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
 
         pn = MC_lgtn['pn']  # 点的密度是5000个点/每1000m
         num_zones = Dymax // Dyp  # 计算区间数量
-        y_range = np.linspace(ymin, ymax, num_zones)  # 将y轴分区间
+        y_range = np.linspace(ymin, ymax, num_zones+1)  # 将y轴分区间
         x_points = []
         y_points = []
         # 对于每个区间，生成相应数量的点

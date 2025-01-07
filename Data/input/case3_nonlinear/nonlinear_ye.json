@@ -15382,10 +15382,10 @@
     "delta_time": 6.666666666666667e-08,
     "time": 1e-4,
     "constant_frequency": 2e4,
-    "max_length": 60,
+    "max_length": 20,
     "global_ground": 1,
     "ground": {
-      "sig": 0.01,
+      "sig": 0.001,
       "mur": 1,
       "epr": 0,
       "gnd_mode": 1,

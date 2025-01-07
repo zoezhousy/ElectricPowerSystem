@@ -297,10 +297,15 @@ class Network:
                 Ez_lossy = 0
                 erg = constants.epr
                 sigma_g = constants.sigma
-                if (erg, sigma_g, 0) in shared_dict:
-                    Er_lossy = shared_dict[(erg, sigma_g, 0)]
-                    Ez_lossy = shared_dict[(erg, sigma_g, 1)]
+                if os.path.exists("Er_lossy.npy") and os.path.exists("Ez_lossy.npy"):
                     print("------------existing ---------------")
+                    Er_lossy = np.load("Er_lossy.npy")
+                    Ez_lossy = np.load("Ez_lossy.npy")
+
+                #if (erg, sigma_g, 0) in shared_dict:
+                    # Er_lossy = shared_dict[(erg, sigma_g, 0)]
+                    # Ez_lossy = shared_dict[(erg, sigma_g, 1)]
+                    # print("------------existing ---------------")
                 else:
                     H_p = H_MagneticField_calculate(pt_start, pt_end, lightning.strokes[i],
                                                     lightning.channel,
@@ -310,9 +315,11 @@ class Network:
                                                          constants.ep0, constants.vc)  # 计算电场
                     # 计算有损地面的电场
                     Er_lossy = ElectricField_above_lossy(-H_p, Er_T, constants, shared_dict, constants.sigma)
-                    shared_dict[(erg, sigma_g, 0)] = Er_lossy
+                    np.save("Er_lossy.npy", Er_lossy)
+                    #shared_dict[(erg, sigma_g, 0)] = Er_lossy
                     Ez_lossy = Ez_T
-                    shared_dict[(erg, sigma_g, 1)] = Ez_lossy
+                    np.save("Ez_lossy.npy", Ez_lossy)
+                    #shared_dict[(erg, sigma_g, 1)] = Ez_lossy
                 new_U = InducedVoltage_calculate_indirect(pt_start, pt_end, branches, lightning,
                                                           stroke_sequence=i, Er_lossy=Er_lossy, Ez_lossy=Ez_lossy)
                 U_out = pd.concat([U_out, new_U], axis=1, ignore_index=True)
@@ -895,7 +902,7 @@ class Network:
                                 for w in ohl["Wire"]:
                                     cir_id_ohl = w['cir_id']
                                     phase_id_ohl = w['phase']
-                                    if cir_id_ohl == cir_id and phase_id_ohl == phase_lgt:
+                                    if cir_id_ohl == cir_id:
                                         z = w["node1_pos"][2]
                                         position = position_xy.append(z)
                                         if w['type'] == 'SW':
@@ -939,53 +946,54 @@ class Network:
     def Pre_run_MC(self, load_dict):
         ### 用大矩阵----------
         # 0. 手动预设值
-        # self.global_set(load_dict)
-        # self.dt = 1e-8
-        # #self.Nt = 1000
-        # self.T = 2e-5
-        # self.Nt = int(np.ceil(self.T / self.dt))
-        # # 1. 初始化电网，根据电网信息计算源
-        # self.initialize_network(load_dict,self.VF)
-        # self.combine_parameter_matrix()
-        # branches = self.calculate_branches(self.max_length)
-        # nodes = self.capacitance_matrix.columns.tolist()
+        self.global_set(load_dict)
+        self.dt = 1e-8
+        #self.Nt = 1000
+        self.T = 2e-5
+        self.Nt = int(np.ceil(self.T / self.dt))
+        # 1. 初始化电网，根据电网信息计算源
+        self.initialize_network(load_dict,self.VF)
+        self.combine_parameter_matrix()
+        branches,nodes = self.calculate_branches(self.max_length)
+        nodes.remove('ref')
+
 
         #### 用小矩阵-----------
-        print("Hybrid model is used")
-
-        self.solution_type['hybrid'] = True
-        self.global_set(load_dict)
-        constants = Constant()
-        self.dt = self.max_length / constants.vc
-        self.Nt = int(np.ceil(self.T / self.dt))
-
-        self.initialize_network(load_dict, self.VF)
-
-        tower_matrix = self.tower_individual_matrix()  # 合并tower矩阵
-        line_matrix = self.line_individual_matrix()  # 合并cable和OHL矩阵
-
-        # tower_branches, tower_nodes, tower_or_lump_nodes, tower_and_line_nodes = self.nodes_of_hybrid_mode()
-        tower_branches = {}
-        tower_branches, tower_nodes = self.tower_branches(tower_branches)
-        tower_nodes.discard('ref')
-
-        self.H = {"Line": line_matrix, "Tower": tower_matrix}
-
-        # 2. 保存支路节点信息
-        branches,nodes = self.calculate_branches(self.max_length)
+        # print("Hybrid model is used")
+        #
+        # self.solution_type['hybrid'] = True
+        # self.global_set(load_dict)
+        # constants = Constant()
+        # self.dt = self.max_length / constants.vc
+        # self.Nt = int(np.ceil(self.T / self.dt))
+        #
+        # self.initialize_network(load_dict, self.VF)
+        #
+        # tower_matrix = self.tower_individual_matrix()  # 合并tower矩阵
+        # line_matrix = self.line_individual_matrix()  # 合并cable和OHL矩阵
+        #
+        # # tower_branches, tower_nodes, tower_or_lump_nodes, tower_and_line_nodes = self.nodes_of_hybrid_mode()
+        # tower_branches = {}
+        # tower_branches, tower_nodes = self.tower_branches(tower_branches)
+        # tower_nodes.discard('ref')
+        #
+        # self.H = {"Line": line_matrix, "Tower": tower_matrix}
+        #
+        # # 2. 保存支路节点信息
+        # branches,nodes = self.calculate_branches(self.max_length)
        # nodes = list(tower_nodes | set(line_matrix["capacitance_matrix"].columns.tolist()))
 
         # 3. 生成多个雷电
         if load_dict["MC"]:
             print("running Monte Carlo to generate lightnings")
             df27_list, parameterst_list, stroke_result_list, PoleXY = run_MC(self, load_dict,None)
-
+            dataset = []
             MC_result_list = []
-            summary = {"FO": [], "Huri": [], "RunTime": []}
+            summary = {"FOR": [],"FO": [], "Huri": [], "RunTime": []}
             FO_num = 0
             with Manager() as manager:
                 shared_dict = manager.dict()
-                for a in tqdm(range(len(df27_list))):
+                for a in range(len(df27_list)):
                     index = 0
                     MC_result = []
                     df27 = df27_list[a]
@@ -1039,7 +1047,7 @@ class Network:
                                     for w in ohl["Wire"]:
                                         cir_id_ohl = w['cir_id']
                                         phase_id_ohl = w['phase_id']
-                                        if cir_id_ohl == cir_id and phase_id_ohl == phase_id:
+                                        if cir_id_ohl == cir_id:
                                             z = w["node1_pos"][2]
                                             position = position_xy.append(z)
                                             if w['type'] == 'SW':
@@ -1050,12 +1058,13 @@ class Network:
                         MC_result.append((lightning, area, wire, position_xy))
                     start_time = time.time()
                     # 创建一个共享字典
-                    FO, huri = self.Find_Dmax(MC_result, nodes, branches, shared_dict)
+                    FO, huri,dataset = self.Find_Dmax(MC_result, nodes, branches, shared_dict,dataset)
                     end_time = time.time()  # 记录结束时间
                     duration = end_time - start_time  # 计算运行时长
                     true_count = len(list(filter(lambda x: x, FO)))
-                    FOR = 100*true_count/df27_list[-1].iloc[-1,0]*2*1500
-                    FO_num = FO_num+true_count
+                    FO_num = FO_num + true_count
+                    FOR = 100*FO_num/df27_list[-1].iloc[-1, 0]*2
+
                     summary["FO"].append(FO_num)
                     summary["FOR"].append(FOR)
                     summary["Huri"].append(huri)
@@ -1064,7 +1073,9 @@ class Network:
                 self.save_result(summary,path='Data/input/case2_linear/')
 
             positions = [i+1 for i, (a, b) in enumerate(zip(summary["FO"], summary["FO"][1:])) if b - a < 1]
-            Distance_max = (positions[0]+1) * 100
+            Distance_max = len(df27_list)*100
+            if positions[0]:
+                Distance_max = (positions[0]+1) * 100
             print("maximum distance is: ", Distance_max)
             print("total flash count: ", df27_list[-1].iloc[-1, 0])
             return Distance_max
@@ -1104,25 +1115,19 @@ class Network:
         #lock = Lock()
         # 创建进程列表
         start_time = time.time()  # 记录开始时间
-        #processes = []
-        MCLGT = {}
-
-        MCLGT['flag'] = 1
-        MCLGT['huri'] = []
-        MCLGT['radi'] = 60
-        MCLGT['tsel'] = 0
+        processes = []
         for index,MC in enumerate(MC_results):
             # 创建Process对象，传递当前实例和MC_result的元素
-            # p = Process(target=process_item, args=(MC, nodes, branches, self,index,shared_dict))
-            # processes.append(p)
-            # p.start()  # 启动进程
+            p = Process(target=process_item, args=(MC, nodes, branches, self,index,shared_dict))
+            processes.append(p)
+            p.start()  # 启动进程
 
-            solution = process_item(MC, nodes, branches, self,index,shared_dict)
+            ins = process_calculate(MC, nodes, branches, self,index,shared_dict,1)
 
 
         # 等待所有进程完成
-        # for p in processes:
-        #     p.join()
+        for p in processes:
+            p.join()
         end_time = time.time()  # 记录结束时间
         duration = end_time - start_time  # 计算运行时长
         print(f"Total running time: {duration} seconds")  # 打印运行时长
@@ -1378,9 +1383,9 @@ class Network:
                 FO_indirect.append(False)
         return FO_direct,FO_indirect,huri
 
-    def Find_Dmax(self,MC_result, nodes, branches,shared_dict):
+    def Find_Dmax(self,MC_result, nodes, branches,shared_dict,dataset):
         icurr = []
-        dataset = []
+       # dataset = []
         FO = []
         R = 100
         constants = Constant()
@@ -1458,7 +1463,7 @@ class Network:
                                                 ,closest_two[0][1],closest_two[1][1]]
                 dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
                 FO.append(False)
-        return FO,huri
+        return FO,huri,dataset
 
 def process_calculate(MC, nodes, branches, self_ref,index,shared_dict,calculate_ins):
     constants = Constant()
@@ -1488,29 +1493,29 @@ def process_item(MC, nodes, branches, self_ref,index,shared_dict,calculate_ins):
     constants.ep0 = 8.85e-12
     U_out, I_out,shared_dict = self_ref.source_calculate(MC[0], MC[1], MC[2], MC[3], nodes, branches,constants,shared_dict)
     sources = self_ref.add_lump(U_out, I_out)
-    line_matrix = self_ref.H["Line"]
-    tower_matrix = self_ref.H["Tower"]
-    result_tower, ins_bran = self_ref.calculate_of_hybrid_mode(line_matrix, tower_matrix, sources, self_ref.Nt, self_ref.dt, self_ref.GPU_calculation)
-    print("calculate"+str(index))
-
-    ins = False
-    if len(ins_bran["SDEM"])>0:
-        ins = True
-        # 指定CSV文件名
-        filename = "Data/output/MC_ins.csv"
-        # 使用'a'模式打开文件，准备追加内容
-        with open(filename, 'a', newline='') as csvfile:
-            # 创建一个csv写入器
-            writer = csv.writer(csvfile)
-            writer.writerow(ins_bran["SDEM"])
-
-    return ins
+    # line_matrix = self_ref.H["Line"]
+    # tower_matrix = self_ref.H["Tower"]
+    # result_tower, ins_bran = self_ref.calculate_of_hybrid_mode(line_matrix, tower_matrix, sources, self_ref.Nt, self_ref.dt, self_ref.GPU_calculation)
+    # print("calculate"+str(index))
+    #
+    # ins = False
+    # if len(ins_bran["SDEM"])>0:
+    #     ins = True
+    #     # 指定CSV文件名
+    #     filename = "Data/output/MC_ins.csv"
+    #     # 使用'a'模式打开文件，准备追加内容
+    #     with open(filename, 'a', newline='') as csvfile:
+    #         # 创建一个csv写入器
+    #         writer = csv.writer(csvfile)
+    #         writer.writerow(ins_bran["SDEM"])
+    #
+    # return ins
 
   ## 用大矩阵------------
 
-    # H = self_ref.build_H()
-    # if calculate_ins ==1:
-    #     ins = self_ref.INS_calculate(self_ref.Nt,self_ref.dt, H, sources)
-    #     print("calculate"+str(index))
-    #     return ins
+    H = self_ref.build_H()
+    if calculate_ins ==1:
+        ins = self_ref.INS_calculate(self_ref.Nt,self_ref.dt, H, sources)
+        print("calculate"+str(index))
+        return ins
 

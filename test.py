@@ -1,14 +1,30 @@
-x1 = "x1"
-x2 = "x2"
-x3 = "X3"
-x4 = "x1"
-a = []
-a.append(x1)
-a.append(x2)
-a.append(x3)
-a.append(x4)
-a = set(a)
-print(a)
+import matplotlib.pyplot as plt
 
-b = {"x1":"dfd","x2":"dfgh"}
-print(a,b.keys(),set(b.keys()).intersection(a))
+# 数据
+x = [1, 2, 3, 4, 5,6,7,8,9,10,11,12,13,14,15]
+y =[190
+,540
+,710
+,720
+,720
+,720
+,720
+,720
+,720
+,720
+,720
+,720
+,720
+,720
+,720]
+
+# 创建图表
+plt.plot(x, y)  # 使用'o'标记每个数据点
+
+# 添加标题和标签
+plt.title('FO# for 10000 strokes')
+plt.xlabel('Index')
+plt.ylabel('FO')
+
+# 显示图表
+plt.show()

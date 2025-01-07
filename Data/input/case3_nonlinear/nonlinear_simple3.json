@@ -1180,7 +1180,7 @@
   "MC": {
     "surrounding_distance": 1000,
     "MC_lgtn": {
-      "casemodel": 1,
+      "casemodel": 2,
       "Dymax":1500,
       "Dyp":100,
       "pointmd":200,

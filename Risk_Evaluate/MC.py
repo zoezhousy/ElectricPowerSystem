@@ -14,6 +14,8 @@ from Model.Lightning import Stroke,Lightning,Channel
 import math
 import copy
 import sys
+import random
+
 # network = pickle.load(open('../Data/output/network.pkl', 'rb'))
 # print(network.dt)
 
@@ -102,6 +104,8 @@ def run_MC(network,load_dict,Dmax):
     # with open(json_file_path, 'r', encoding="utf-8") as j:
     #     load_dict = json.load(j)
 
+    #每个杆子的端点pole状态
+    Line['polestate'] = np.array([random.choice([0, 1]) for _ in range(Line['Node'].shape[0])])
     # 判断横着的线长度是否大于等于1000m 找到x轴最中间的pointmdm的两个点
     Coordinates = Line['Node']
     y_zero_points = Coordinates[Coordinates[:, 1] == 0]  # 找到 y 坐标为 0 的点
