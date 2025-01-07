@@ -13,11 +13,11 @@ class StrokeParameters:
     }
 
     HEIDLER_PARAMETERS = {
-        '0.25/100us': [0.9, 0.25, 100, 2],
-        '0.25/2.5us': [10.7e3, 0.25, 2.5, 2],
-        '8/20us': [30.85, 8, 20, 2.4],
-        '2.6/50us': [10e5, 2.6, 50, 2.1],
-        '10/350us': [44.43, 10, 350, 2.1]
+        '0.25/100us': [0.9, 0.25, 100, 2, 0.9], # Ip, tau1, tau2, n, eta
+        '0.25/2.5us': [10.7e3, 0.25, 2.5, 2, 0.9],
+        '8/20us': [30.85, 8, 20, 2.4, 0.9],
+        '2.6/50us': [10e5, 2.6, 50, 2.1, 0.9],
+        '10/350us': [44.43, 10, 350, 2.1, 0.9]
     }
 
     CHANNELMODEL_PARAMETERS = {
@@ -98,11 +98,9 @@ class Stroke:
         return Iout
 
     def heidler_waveform(self, t):
-        Ip, tau1, tau2, n = self.parameters
+        Ip, tau1, tau2, n, eta = self.parameters
         tau1 = tau1 * 1.0e-06
         tau2 = tau2 * 1.0e-06
-        eta = math.exp(-(tau1 / tau2) * ((n * tau2 / tau1) ** (1 / n)))
-        # eta = 1
         Iout = ((Ip / eta) * ((t / tau1) ** n) / (1 + (t / tau1) ** n)) * np.exp(-t / tau2)
 
         return Iout

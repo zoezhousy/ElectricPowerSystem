@@ -857,8 +857,8 @@ class Network:
                         duration = self.T
                         dt = self.dt
                         stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True, parameter_set=None,
-                                    parameters=[parameterst[index].tolist()[2]*1e3,parameterst[index].tolist()[3],
-                                    parameterst[index].tolist()[5],parameterst[index].tolist()[4]])
+                                    parameters=[parameterst[index].tolist()[2]*1e3,parameterst[index].tolist()[4],
+                                    parameterst[index].tolist()[6],parameterst[index].tolist()[5], parameterst[index].tolist()[3]])
                         stroke.calculate()
                         index += 1
                         stroke_list.append(stroke)
