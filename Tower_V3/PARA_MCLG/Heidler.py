@@ -8,9 +8,11 @@ def Heidler(x):
     # The possible values of N are limited to the integer values 2, 3 or 4.
     I0, t1, t2 = x[0], x[1], x[2]
     N = round(x[3])
-    nm = exp((-t1 / t2) * (t2 * N / t1) ** (1 / N))
+    nm = np.exp((-t1 / t2) * (t2 * N / t1) ** (1 / N))
     # 将符号表达式转换为可供 minimize_scalar 使用的函数
-    im2 = lambda tm: -((I0 / nm) * (((tm / t1) ** N) / (1 + (tm / t1) ** N)) * exp(-tm / t2).evalf())
+    def im2(tm):
+        return -((I0 / nm) * (((tm / t1) ** N) / (1 + (tm / t1) ** N)) * np.exp(-tm / t2))
+
     tm = symbols('tm')
     im = (I0 / nm) * (((tm / t1) ** N) / (1 + (tm / t1) ** N)) * exp(-tm / t2)
 
@@ -18,7 +20,7 @@ def Heidler(x):
     res = minimize_scalar(im2, bounds=(0, 50), method='bounded')
     Ipc = abs(res.fun)  # 搜索过程中可能会出现复数
     # 搜索过程中可能会出现Ipc = []或Ipc=NaN
-    if len(Ipc) == 0 or np.isnan(Ipc):
+    if np.isnan(Ipc):
         Ipc = -100
 
     # tfc:time from 第一次10%*Ipc到第一次90%*Ipc

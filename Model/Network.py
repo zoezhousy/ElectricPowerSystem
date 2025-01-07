@@ -853,12 +853,20 @@ class Network:
                     stroke_list = []
                     #初始化每个stroke
                     for j in range(i[1].shape[0]):
-                        stroke_type = "Heidler"
+                        stroke_type = "CIGRE"
                         duration = self.T
                         dt = self.dt
                         stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True, parameter_set=None,
-                                    parameters=[parameterst[index].tolist()[2]*1e3,parameterst[index].tolist()[4],
-                                    parameterst[index].tolist()[6],parameterst[index].tolist()[5], parameterst[index].tolist()[3]])
+                                    parameters=[parameterst[index].tolist()[0],
+                                                        parameterst[index].tolist()[1],
+                                                        parameterst[index].tolist()[2],
+                                                        parameterst[index].tolist()[3],
+                                                        parameterst[index].tolist()[4],
+                                                        parameterst[index].tolist()[5],
+                                                        parameterst[index].tolist()[6],
+                                                        parameterst[index].tolist()[7],
+                                                        parameterst[index].tolist()[8],
+                                                        parameterst[index].tolist()[9]])
                         stroke.calculate()
                         index += 1
                         stroke_list.append(stroke)
@@ -1004,14 +1012,21 @@ class Network:
                         stroke_list = []
                         # 初始化每个stroke
                         for j in range(i[1].shape[0]):
-                            stroke_type = "Heidler"
+                            stroke_type = "CIGRE"
                             duration = self.T
                             dt = self.dt
                             stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True,
                                             parameter_set=None,
-                                            parameters=[parameterst[index].tolist()[2]*1e3 ,
+                                            parameters=[parameterst[index].tolist()[0],
+                                                        parameterst[index].tolist()[1],
+                                                        parameterst[index].tolist()[2],
                                                         parameterst[index].tolist()[3],
-                                                        parameterst[index].tolist()[5], parameterst[index].tolist()[4]])
+                                                        parameterst[index].tolist()[4],
+                                                        parameterst[index].tolist()[5],
+                                                        parameterst[index].tolist()[6],
+                                                        parameterst[index].tolist()[7],
+                                                        parameterst[index].tolist()[8],
+                                                        parameterst[index].tolist()[9]])
                             stroke.calculate()
                             index += 1
                             stroke_list.append(stroke)
