@@ -295,15 +295,16 @@ class Network:
         I_out = pd.DataFrame()
         if lightning.type == "Indirect":
             for i in range(len(lightning.strokes)):
-
+                
                 Er_lossy = 0
                 Ez_lossy = 0
                 epr = self.epr
                 sig = self.sig
+                GPU = self.GPU_calculation
                 #if (erg, sigma_g, 0) in shared_dict:
                 Ez_T, Er_T = ElectricField_calculate(pt_start, pt_end, lightning.strokes[i],
                                                      lightning.channel,
-                                                     constants.ep0, constants.vc)  # 计算电场
+                                                     constants.ep0, constants.vc, GPU)  # 计算电场
                 if self.gnd_mode ==0:
                     Er_lossy = Er_T
                     Ez_lossy = Ez_T
@@ -311,7 +312,7 @@ class Network:
                 else:
                     H_p = H_MagneticField_calculate(pt_start, pt_end, lightning.strokes[i],
                                                     lightning.channel,
-                                                    constants.ep0, constants.vc)  # 计算磁场
+                                                    constants.ep0, constants.vc, GPU)  # 计算磁场
 
                     # 计算有损地面的电场
                     Er_lossy = ElectricField_above_lossy(-H_p, Er_T, constants, shared_dict,self.dt,epr,sig, sigma0=None)
