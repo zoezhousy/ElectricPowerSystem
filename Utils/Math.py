@@ -173,6 +173,52 @@ def get_t_delay_index2(arr):
         index2[-len(positive_part):] = 1
     return index2
 
+def get_chunks(D, T):
+    """
+    返回某一维度的分块索引范围列表。
+    假设维度为 D，阈值为 T。
+    例如：D=450, T=200 时，返回:
+    [(1,200), (201,400), (401,450)]
+    """
+    if D <= T:
+        return [[0, D]]
+    else:
+        # 分块数
+        num_chunks = math.ceil(D / T)
+        chunks = []
+        start = 0
+        for i in range(num_chunks):
+            end = min(start + T, D)
+            chunks.append([start, end])
+            start = end
+        return chunks
+
+def split_3d_matrix(shape, thresholds):
+    """
+    对一个 3D 矩阵按照阈值进行分块，并返回分块信息。
+    shape: (D1, D2, D3)
+    thresholds: (T1, T2, T3)
+    返回:
+      - total_blocks: 分块数
+      - blocks_info: 每个分块在原矩阵中 (dim1, dim2, dim3) 三个维度的索引范围
+    """
+    D1, D2, D3 = shape
+    T1, T2, T3 = thresholds
+    
+    chunks_d1 = get_chunks(D1, T1)
+    chunks_d2 = get_chunks(D2, T2)
+    chunks_d3 = get_chunks(D3, T3)
+    
+    # 计算三维分块的笛卡尔积
+    blocks_info = []
+    for cd1 in chunks_d1:
+        for cd2 in chunks_d2:
+            for cd3 in chunks_d3:
+                blocks_info.append([cd1, cd2, cd3])
+                
+    total_blocks = len(blocks_info)
+    
+    return total_blocks, blocks_info
 
 def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, GPU, air_or_img):
     """
