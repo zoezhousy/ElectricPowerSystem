@@ -3,7 +3,7 @@ from Utils.Math import calculate_distances
 import sys
 sys.path.append(r'D:\Documents\a实验室\过电压计算程序\ElectricModelBuilding_python\ElectricPowerSystem\Vector_Fitting')
 from scipy.interpolate import interp1d
-from scipy.signal import convolve2d
+from scipy.signal import convolve2d, fftconvolve
 from Model.Contant import Constant
 from Vector_Fitting.Calculators.vecfit_kernel_z import vecfit_kernel_Z_Ding
 from Model.Lightning import Lightning, Stroke, Channel
@@ -276,14 +276,12 @@ def H_MagneticField_calculate(pt_start, pt_end, stroke, channel, ep0, vc):
     return H_p
 
 
-def ElectricField_above_lossy(HR0, ER,  constants: Constant,VF_dict, sigma0=None):
-    erg = constants.epr
-    sigma_g = constants.sigma
+def ElectricField_above_lossy(HR0, ER,  constants: Constant,VF_dict,dt,erg,sig,sigma0=None):
+    sigma_g = sig
     if sigma0 is not None:
         sigma_g = sigma0
-    dt = constants.dt
-    Nt = constants.Nt
 
+    #常数
     ep0 = constants.ep0
     u0 = constants.mu0
     vc = constants.vc
@@ -296,10 +294,10 @@ def ElectricField_above_lossy(HR0, ER,  constants: Constant,VF_dict, sigma0=None
     for ii in range(w.size):
         H_in[:, :, ii] = vc * u0 / np.sqrt(erg + sigma_g / (1j * w[:, ii] * ep0))
 
+    #VF计算
     # The vecfit_kernel_Z_Ding function must be defined or replaced by an equivalent fitting routine
-
+    R0, L0, Rn, Ln, Zfit = None,None,None,None,None
     R0, L0, Rn, Ln, Zfit = vecfit_kernel_Z_Ding(H_in, w / (2 * np.pi), Nd)
-
 
     # R0_1 = R0 - np.sum(Rn, axis=2)
     # L0_1 = L0
@@ -318,8 +316,8 @@ def ElectricField_above_lossy(HR0, ER,  constants: Constant,VF_dict, sigma0=None
     # interp_func = interp1d(x, y, kind='cubic', bounds_error=False, fill_value='extrapolate')
     H_save2 = interp_func(xi)
 
-    if a00 == 1:
-        H_save2 = H_save2.T
+    # if a00 == 1:
+    #     H_save2 = H_save2.T
 
     Ntt = H_save2.shape[1]
     H_all_diff = np.zeros_like(H_save2)
@@ -342,13 +340,14 @@ def ElectricField_above_lossy(HR0, ER,  constants: Constant,VF_dict, sigma0=None
     shape1_after_convolution = H_save2.shape[1] + ee_T[[1], :].shape[1] - 1
     ee_conv = np.zeros((shape0_after_convolution, shape1_after_convolution, Nd))  # 预先定义卷积后矩阵大小，因为H_save2和ee矩阵大小已知
     for jj in range(Nd):
-        tmp = convolve2d(H_save2, ee[:, [jj]].T, mode='full', boundary='fill')
-        ee_conv[:, :, jj] = dt0 * convolve2d(H_save2, ee[:, [jj]].T, mode='full', boundary='fill')
+        # tmp = convolve2d(H_save2, ee[:, [jj]].T, mode='full', boundary='fill')
+        tmp = fftconvolve(H_save2, ee[:, [jj]].T, mode='full')
+        ee_conv[:, :, jj] = dt0 * tmp
 
     ee_conv_sum = np.sum(ee_conv, axis=2)
     ee_all = ee0[:, :Ntt:conv_2] + eeL[:, :Ntt:conv_2] + ee_conv_sum[:, :Ntt:conv_2]
     Er_lossy = ER + ee_all.T
-    VF_dict[(erg, sigma_g)] = Er_lossy
+    #VF_dict[(erg, sigma_g)] = Er_lossy
     return Er_lossy
 
 

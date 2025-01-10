@@ -183,8 +183,8 @@ class Lightning:
 
 
 if __name__ == '__main__':
-    stroke1 = Stroke('Heidler', duration=2.0e-5, dt=1.0e-8, is_calculated=True, parameter_set='0.25/2.5us',
-                    parameters=None)
+    stroke1 = Stroke('CIGRE', duration=3.0e-5, dt=1.0e-8, is_calculated=True, parameter_set='2.6/50us',
+                    parameters=[6.93772189214845e-06, 3002387301.704372, 8.308185882194957e+28, 4.794578080726913, 40237.49524578007, 0.0001728047051820448, 4085.6857149462894, 2.9554703341344266e-07, 40168.67725648198, 39888.619574531665])
     # stroke2 = Stroke('Heidler', duration=1e-3, is_calculated=True, parameter_set='2.6/50us',
     #                 parameters=None)
     strokes = [stroke1]
@@ -198,7 +198,7 @@ if __name__ == '__main__':
         last_stroke_duration = stroke.duration
     t = np.concatenate(t, axis=0)
     I = lightning.total_waveform()
-    plt.xlabel('时间 (us)')
-    plt.ylabel('电流 (kA)')
+    plt.xlabel('时间 (s)')
+    plt.ylabel('电流 (A)')
     plt.plot(t, I)
     plt.show()

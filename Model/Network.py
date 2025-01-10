@@ -90,6 +90,9 @@ class Network:
         self.VF_dict = {}
         self.PoleXY = {}
         self.tower_head_node = {}
+        self.sig=None
+        self.epr = None
+
 
     # 记录电网元素之间的关系
     def tower_branches(self, branches):
@@ -280,7 +283,7 @@ class Network:
 
 
     # 输出U/I
-    def source_calculate(self, lightning, area, wire, position, nodes, branches, constants, shared_dict):
+    def source_calculate(self, lightning, area, wire, position, nodes, branches,constants, shared_dict):
 
         start = [list(l[0].values())[0] for l in list(branches.values())]
         end = [list(l[1].values())[0] for l in list(branches.values())]
@@ -295,31 +298,24 @@ class Network:
 
                 Er_lossy = 0
                 Ez_lossy = 0
-                erg = constants.epr
-                sigma_g = constants.sigma
-                if os.path.exists("Er_lossy.npy") and os.path.exists("Ez_lossy.npy"):
-                    print("------------existing ---------------")
-                    Er_lossy = np.load("Er_lossy.npy")
-                    Ez_lossy = np.load("Ez_lossy.npy")
-
+                epr = self.epr
+                sig = self.sig
                 #if (erg, sigma_g, 0) in shared_dict:
-                    # Er_lossy = shared_dict[(erg, sigma_g, 0)]
-                    # Ez_lossy = shared_dict[(erg, sigma_g, 1)]
-                    # print("------------existing ---------------")
+                Ez_T, Er_T = ElectricField_calculate(pt_start, pt_end, lightning.strokes[i],
+                                                     lightning.channel,
+                                                     constants.ep0, constants.vc)  # 计算电场
+                if self.gnd_mode ==0:
+                    Er_lossy = Er_T
+                    Ez_lossy = Ez_T
+                    print("------------existing ---------------")
                 else:
                     H_p = H_MagneticField_calculate(pt_start, pt_end, lightning.strokes[i],
                                                     lightning.channel,
                                                     constants.ep0, constants.vc)  # 计算磁场
-                    Ez_T, Er_T = ElectricField_calculate(pt_start, pt_end, lightning.strokes[i],
-                                                         lightning.channel,
-                                                         constants.ep0, constants.vc)  # 计算电场
+
                     # 计算有损地面的电场
-                    Er_lossy = ElectricField_above_lossy(-H_p, Er_T, constants, shared_dict, constants.sigma)
-                    np.save("Er_lossy.npy", Er_lossy)
-                    #shared_dict[(erg, sigma_g, 0)] = Er_lossy
+                    Er_lossy = ElectricField_above_lossy(-H_p, Er_T, constants, shared_dict,self.dt,epr,sig, sigma0=None)
                     Ez_lossy = Ez_T
-                    np.save("Ez_lossy.npy", Ez_lossy)
-                    #shared_dict[(erg, sigma_g, 1)] = Ez_lossy
                 new_U = InducedVoltage_calculate_indirect(pt_start, pt_end, branches, lightning,
                                                           stroke_sequence=i, Er_lossy=Er_lossy, Ez_lossy=Ez_lossy)
                 U_out = pd.concat([U_out, new_U], axis=1, ignore_index=True)
@@ -635,6 +631,9 @@ class Network:
             self.GPU_calculation = load_dict['Global']['GPU_calculation']
             self.Nt = int(np.ceil(self.T / self.dt))
             self.Hybrid_method = load_dict['Global']['Hybrid_method']
+            self.sig = load_dict['Global']['ground']['sig']
+            self.epr = load_dict['Global']['ground']['epr']
+            self.gnd_mode = load_dict['Global']['ground']['gnd_mode']
 
     def nodes_of_hybrid_mode(self):
         tower_branches = {}
@@ -844,112 +843,111 @@ class Network:
 
             MC_result_list = []
             summary = {"nonFO_indirect":0,"nonFO_direct":0,"FO_indirect":0,"FO_direct":0,"Huri":0,"RunTime":0}
-            with Manager() as manager:
-                shared_dict = manager.dict()
-                index = 0
-                MC_result = []
-                #对每个flash
-                for i in df27.groupby("flash"):
-                    stroke_list = []
-                    #初始化每个stroke
-                    for j in range(i[1].shape[0]):
-                        stroke_type = "Heidler"
-                        duration = self.T
-                        dt = self.dt
-                        stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True, parameter_set=None,
-                                    parameters=[parameterst[index].tolist()[2]*1e3,parameterst[index].tolist()[3],
-                                    parameterst[index].tolist()[5],parameterst[index].tolist()[4]])
-                        stroke.calculate()
-                        index += 1
-                        stroke_list.append(stroke)
-                    flash_type = stroke_result[0][index - 1]
-                    area = int(stroke_result[1][index - 1])
-                    area_id = 0 if math.isnan(stroke_result[2][index - 1]) else str(int(stroke_result[2][index - 1]))
-                    cir_id = 0 if math.isnan(float(stroke_result[3][index - 1])) else int(
-                        float(stroke_result[3][index - 1]))
-                    phase_id = 0 if math.isnan(float(stroke_result[4][index - 1])) else int(
-                        float(stroke_result[4][index - 1]))
-                    position_xy = stroke_result[8][index - 1]
-                    position = None
-                    wire = None
-                    if phase_id == 0:
-                        phase_lgt = 'S'
-                    elif phase_id == 1:
-                        phase_lgt = 'A'
-                    elif phase_id == 2:
-                        phase_lgt = 'B'
-                    else:
-                        phase_lgt = 'C'
-
-                    if area == 0:
-                        area = "Ground"
-                        position = position_xy.append(0)
-                    elif area == 1:
-                        area = "tower_" + area_id
-                        for tower in load_dict["Tower"]:
-                            if tower["Info"]["name"] == area:
-                                z = tower["Info"]["pole_height"]
-                                position = position_xy.append(z)
-                                for w in tower["Wire"]:
-                                    if w["pos_1"][2] == z or w["pos_2"][2] == z:
-                                        wire = w["bran"]
-                                if wire is None:
-                                    wire = tower["Wire"][0]
-                    elif area == 2:
-                        area = "OHL_" + area_id
-                        for ohl in load_dict["OHL"]:
-                            if ohl["Info"]["name"] == area:
-                                for w in ohl["Wire"]:
-                                    cir_id_ohl = w['cir_id']
-                                    phase_id_ohl = w['phase']
-                                    if cir_id_ohl == cir_id:
-                                        z = w["node1_pos"][2]
-                                        position = position_xy.append(z)
-                                        if w['type'] == 'SW':
-                                            wire = 'Y' + str(cir_id) + 'S'
-                                        elif w['type'] == 'CIRO':
-                                            wire = 'Y' + str(cir_id) + w['phase']
-
-                    lightning = Lightning(id=1, type=flash_type, strokes=stroke_list, channel=Channel(position_xy))
-                    MC_result.append((lightning, area, wire, position_xy))
-                #MC_result_list.append(MC_result)
-                record_SAF = load_dict["MC"]["Record_SAF"]
-                start_time = time.time()
-                  # 创建一个共享字典
-                if record_SAF==1:
-                    FO_direct,FO_indirect,SAF_direct,SAF_indirect  = self.Huri_method_SAF(MC_result, nodes, branches,shared_dict)
+            shared_dict = None
+            index = 0
+            MC_result = []
+            #对每个flash
+            for i in df27.groupby("flash"):
+                stroke_list = []
+                #初始化每个stroke
+                for j in range(i[1].shape[0]):
+                    stroke_type = "Heidler"
+                    duration = self.T
+                    dt = self.dt
+                    stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True, parameter_set=None,
+                                parameters=[parameterst[index].tolist()[2]*1e3,parameterst[index].tolist()[3],
+                                parameterst[index].tolist()[5],parameterst[index].tolist()[4]])
+                    stroke.calculate()
+                    index += 1
+                    stroke_list.append(stroke)
+                flash_type = stroke_result[0][index - 1]
+                area = int(stroke_result[1][index - 1])
+                area_id = 0 if math.isnan(stroke_result[2][index - 1]) else str(int(stroke_result[2][index - 1]))
+                cir_id = 0 if math.isnan(float(stroke_result[3][index - 1])) else int(
+                    float(stroke_result[3][index - 1]))
+                phase_id = 0 if math.isnan(float(stroke_result[4][index - 1])) else int(
+                    float(stroke_result[4][index - 1]))
+                position_xy = stroke_result[8][index - 1]
+                position = None
+                wire = None
+                if phase_id == 0:
+                    phase_lgt = 'S'
+                elif phase_id == 1:
+                    phase_lgt = 'A'
+                elif phase_id == 2:
+                    phase_lgt = 'B'
                 else:
-                    FO_direct,FO_indirect,huri = self.Huri_method_INS(MC_result, nodes, branches,shared_dict)
-                    end_time = time.time()  # 记录结束时间
-                    duration = end_time - start_time  # 计算运行时长
-                    true_count_direct = len(list(filter(lambda x: x, FO_direct)))
-                    false_count_direct = len(FO_direct) -true_count_direct
-                    true_count_indirect = len(list(filter(lambda x: x, FO_indirect)))
-                    false_count_indirect = len(FO_indirect) - true_count_indirect
-                    summary["FO_direct"] = summary["FO_direct"]+true_count_direct
-                    summary["FO_indirect"] = summary["FO_indirect"] + true_count_indirect
-                    summary["nonFO_direct"] = summary["nonFO_direct"]+false_count_direct
-                    summary["nonFO_indirect"] = summary["nonFO_indirect"] + false_count_indirect
-                    summary["Huri"] = huri
-                    summary["RunTime"] = duration
-                    print("FO_direct: ", summary["FO_direct"])
-                    print("FO_indirect: ", summary["FO_indirect"])
-                    print("nonFO_direct: ", summary["FO_direct"])
-                    print("nonFO_indirect: ", summary["FO_indirect"])
-                    print("Huri: ",summary["Huri"])
-                    print("Running time: ",summary["RunTime"])  # 打印运行时长
-                    df = pd.DataFrame(summary)
-                    # 保存DataFrame到CSV文件
-                    df.to_csv(f'Data/input/case3_nonlinear/summary_values_ins.csv', index=False)
+                    phase_lgt = 'C'
+
+                if area == 0:
+                    area = "Ground"
+                    position = position_xy.append(0)
+                elif area == 1:
+                    area = "tower_" + area_id
+                    for tower in load_dict["Tower"]:
+                        if tower["Info"]["name"] == area:
+                            z = tower["Info"]["pole_height"]
+                            position = position_xy.append(z)
+                            for w in tower["Wire"]:
+                                if w["pos_1"][2] == z or w["pos_2"][2] == z:
+                                    wire = w["bran"]
+                            if wire is None:
+                                wire = tower["Wire"][0]
+                elif area == 2:
+                    area = "OHL_" + area_id
+                    for ohl in load_dict["OHL"]:
+                        if ohl["Info"]["name"] == area:
+                            for w in ohl["Wire"]:
+                                cir_id_ohl = w['cir_id']
+                                phase_id_ohl = w['phase']
+                                if cir_id_ohl == cir_id:
+                                    z = w["node1_pos"][2]
+                                    position = position_xy.append(z)
+                                    if w['type'] == 'SW':
+                                        wire = 'Y' + str(cir_id) + 'S'
+                                    elif w['type'] == 'CIRO':
+                                        wire = 'Y' + str(cir_id) + w['phase']
+
+                lightning = Lightning(id=1, type=flash_type, strokes=stroke_list, channel=Channel(position_xy))
+                MC_result.append((lightning, area, wire, position_xy))
+            #MC_result_list.append(MC_result)
+            record_SAF = load_dict["MC"]["Record_SAF"]
+            start_time = time.time()
+              # 创建一个共享字典
+            if record_SAF==1:
+                FO_direct,FO_indirect,SAF_direct,SAF_indirect  = self.Huri_method_SAF(MC_result, nodes, branches,shared_dict)
+            else:
+                FO_direct,FO_indirect,huri = self.Huri_method_INS(MC_result, nodes, branches,shared_dict)
+                end_time = time.time()  # 记录结束时间
+                duration = end_time - start_time  # 计算运行时长
+                true_count_direct = len(list(filter(lambda x: x, FO_direct)))
+                false_count_direct = len(FO_direct) -true_count_direct
+                true_count_indirect = len(list(filter(lambda x: x, FO_indirect)))
+                false_count_indirect = len(FO_indirect) - true_count_indirect
+                summary["FO_direct"] = summary["FO_direct"]+true_count_direct
+                summary["FO_indirect"] = summary["FO_indirect"] + true_count_indirect
+                summary["nonFO_direct"] = summary["nonFO_direct"]+false_count_direct
+                summary["nonFO_indirect"] = summary["nonFO_indirect"] + false_count_indirect
+                summary["Huri"] = huri
+                summary["RunTime"] = duration
+                print("FO_direct: ", summary["FO_direct"])
+                print("FO_indirect: ", summary["FO_indirect"])
+                print("nonFO_direct: ", summary["FO_direct"])
+                print("nonFO_indirect: ", summary["FO_indirect"])
+                print("Huri: ",summary["Huri"])
+                print("Running time: ",summary["RunTime"])  # 打印运行时长
+                df = pd.DataFrame(summary)
+                # 保存DataFrame到CSV文件
+                df.to_csv(f'Data/input/case3_nonlinear/summary_values_ins.csv', index=False)
 
 
     def Pre_run_MC(self, load_dict):
         ### 用大矩阵----------
         # 0. 手动预设值
         self.global_set(load_dict)
-        self.dt = 1e-8
+        #self.dt = 1e-8
         #self.Nt = 1000
-        self.T = 2e-5
+        #self.T = 2e-5
         self.Nt = int(np.ceil(self.T / self.dt))
         # 1. 初始化电网，根据电网信息计算源
         self.initialize_network(load_dict,self.VF)
@@ -989,115 +987,122 @@ class Network:
             df27_list, parameterst_list, stroke_result_list, PoleXY = run_MC(self, load_dict,None)
             dataset = []
             MC_result_list = []
-            summary = {"FOR": [],"FO": [], "Huri": [], "RunTime": []}
+            #summary = {"FOR": [],"FO": [], "Huri": [], "RunTime": []}
+            summary = {"FOR": [], "FO": []}
             FO_num = 0
-            with Manager() as manager:
-                shared_dict = manager.dict()
-                for a in range(len(df27_list)):
-                    index = 0
-                    MC_result = []
-                    df27 = df27_list[a]
-                    parameterst = parameterst_list[a]
-                    stroke_result = stroke_result_list[a]
-                    # 对每个flash
-                    for i in df27.groupby("flash"):
-                        stroke_list = []
-                        # 初始化每个stroke
-                        for j in range(i[1].shape[0]):
-                            stroke_type = "Heidler"
-                            duration = self.T
-                            dt = self.dt
-                            stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True,
-                                            parameter_set=None,
-                                            parameters=[parameterst[index].tolist()[2]*1e3 ,
-                                                        parameterst[index].tolist()[3],
-                                                        parameterst[index].tolist()[5], parameterst[index].tolist()[4]])
-                            stroke.calculate()
-                            index += 1
-                            stroke_list.append(stroke)
-                        flash_type = stroke_result[0][index - 1]
-                        area = int(stroke_result[1][index - 1])
-                        area_id = 0 if math.isnan(stroke_result[2][index - 1]) else str(
-                            int(stroke_result[2][index - 1]))
-                        cir_id = 0 if math.isnan(float(stroke_result[3][index - 1])) else int(
-                            float(stroke_result[3][index - 1]))
-                        phase_id = 0 if math.isnan(float(stroke_result[4][index - 1])) else int(
-                            float(stroke_result[4][index - 1]))
-                        position_xy = stroke_result[8][index - 1]
-                        position = None
-                        wire = None
-                        if area == 0:
-                            area = "Ground"
-                            position = position_xy.append(0)
-                        elif area == 1:
-                            area = "tower_" + area_id
-                            for tower in load_dict["Tower"]:
-                                if tower["Info"]["name"] == area:
-                                    z = tower["Info"]["pole_height"]
-                                    position = position_xy.append(z)
-                                    for w in tower["Wire"]:
-                                        if w["pos_1"][2] == z or w["pos_2"][2] == z:
-                                            wire = w["bran"]
-                                    if wire is None:
-                                        wire = tower["Wire"][0]
-                        elif area == 2:
-                            area = "OHL_" + area_id
-                            for ohl in load_dict["OHL"]:
-                                if ohl["Info"]["name"] == area:
-                                    for w in ohl["Wire"]:
-                                        cir_id_ohl = w['cir_id']
-                                        phase_id_ohl = w['phase_id']
-                                        if cir_id_ohl == cir_id:
-                                            z = w["node1_pos"][2]
-                                            position = position_xy.append(z)
-                                            if w['type'] == 'SW':
-                                                wire = 'Y' + str(cir_id) + 'S'
-                                            elif w['type'] == 'CIRO':
-                                                wire = 'Y' + str(cir_id) + w['phase']
-                        lightning = Lightning(id=1, type=flash_type, strokes=stroke_list, channel=Channel(position_xy))
-                        MC_result.append((lightning, area, wire, position_xy))
-                    start_time = time.time()
-                    # 创建一个共享字典
-                    FO, huri,dataset = self.Find_Dmax(MC_result, nodes, branches, shared_dict,dataset)
-                    end_time = time.time()  # 记录结束时间
-                    duration = end_time - start_time  # 计算运行时长
-                    true_count = len(list(filter(lambda x: x, FO)))
-                    FO_num = FO_num + true_count
-                    FOR = 100*FO_num/df27_list[-1].iloc[-1, 0]*2
+            shared_dict = None
+            for a in range(len(df27_list)):
+                index = 0
+                MC_result = []
+                df27 = df27_list[a]
+                parameterst = parameterst_list[a]
+                stroke_result = stroke_result_list[a]
+                # 对每个flash
+                for i in df27.groupby("flash"):
+                    stroke_list = []
+                    # 初始化每个stroke
+                    for j in range(i[1].shape[0]):
+                        stroke_type = "Heidler"
+                        duration = self.T
+                        dt = self.dt
+                        stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True,
+                                        parameter_set=None,
+                                        parameters=[parameterst[index].tolist()[2]*1e3 ,
+                                                    parameterst[index].tolist()[3],
+                                                    parameterst[index].tolist()[5], parameterst[index].tolist()[4]])
+                        stroke.calculate()
+                        index += 1
+                        stroke_list.append(stroke)
+                    flash_type = stroke_result[0][index - 1]
+                    area = int(stroke_result[1][index - 1])
+                    area_id = 0 if math.isnan(stroke_result[2][index - 1]) else str(
+                        int(stroke_result[2][index - 1]))
+                    cir_id = 0 if math.isnan(float(stroke_result[3][index - 1])) else int(
+                        float(stroke_result[3][index - 1]))
+                    phase_id = 0 if math.isnan(float(stroke_result[4][index - 1])) else int(
+                        float(stroke_result[4][index - 1]))
+                    position_xy = stroke_result[8][index - 1]
+                    position = None
+                    wire = None
+                    if area == 0:
+                        area = "Ground"
+                        position = position_xy.append(0)
+                    elif area == 1:
+                        area = "tower_" + area_id
+                        for tower in load_dict["Tower"]:
+                            if tower["Info"]["name"] == area:
+                                z = tower["Info"]["pole_height"]
+                                position = position_xy.append(z)
+                                for w in tower["Wire"]:
+                                    if w["pos_1"][2] == z or w["pos_2"][2] == z:
+                                        wire = w["bran"]
+                                if wire is None:
+                                    wire = tower["Wire"][0]
+                    elif area == 2:
+                        area = "OHL_" + area_id
+                        for ohl in load_dict["OHL"]:
+                            if ohl["Info"]["name"] == area:
+                                for w in ohl["Wire"]:
+                                    cir_id_ohl = w['cir_id']
+                                    phase_id_ohl = w['phase_id']
+                                    if cir_id_ohl == cir_id:
+                                        z = w["node1_pos"][2]
+                                        position = position_xy.append(z)
+                                        if w['type'] == 'SW':
+                                            wire = 'Y' + str(cir_id) + 'S'
+                                        elif w['type'] == 'CIRO':
+                                            wire = 'Y' + str(cir_id) + w['phase']
+                    lightning = Lightning(id=1, type=flash_type, strokes=stroke_list, channel=Channel(position_xy))
+                    MC_result.append((lightning, area, wire, position_xy))
+                start_time = time.time()
+                # 尋找最大包圍綫
+                FO, huri,dataset = self.Find_Dmax(MC_result, nodes, branches, shared_dict,dataset)
+                end_time = time.time()  # 记录结束时间
+                duration = end_time - start_time  # 计算运行时长
+                true_count = len(list(filter(lambda x: x, FO))) #閃絡次數，FO中有True和False
+                FO_num = FO_num + true_count #累計所有的閃絡次數
+                FOR = 100*FO_num/df27_list[-1].iloc[-1, 0]*2
 
-                    summary["FO"].append(FO_num)
-                    summary["FOR"].append(FOR)
-                    summary["Huri"].append(huri)
-                    summary["RunTime"].append(duration)
+                summary["FO"].append(FO_num)
+                summary["FOR"].append(FOR)
+                #summary["Huri"].append(huri)
+                #summary["RunTime"].append(duration)
 
-                self.save_result(summary,path='Data/input/case2_linear/')
+            self.save_result(summary,path='Data/input/case2_linear/')
 
-            positions = [i+1 for i, (a, b) in enumerate(zip(summary["FO"], summary["FO"][1:])) if b - a < 1]
+            positions = [i+1 for i, (a, b) in enumerate(zip(summary["FO"], summary["FO"][1:])) if b - a < 1] #第幾個區域開始閃絡值不變
             Distance_max = len(df27_list)*100
             if positions[0]:
-                Distance_max = (positions[0]+1) * 100
+                Distance_max = positions[0] * 100
             print("maximum distance is: ", Distance_max)
             print("total flash count: ", df27_list[-1].iloc[-1, 0])
             return Distance_max
     def save_result(self,summary,path):
+        name = 'Heidler_3750_lossV3'
+        #name = 'Heidler_3750_perfectV2'
         print("FO: ", summary["FO"])
-        print("Huri: ", summary["Huri"])
-        print("Running time: ", summary["RunTime"])  # 打印运行时长
+        print("FOR: ", summary["FOR"])
+        #("Huri: ", summary["Huri"])
+        #print("Running time: ", summary["RunTime"])  # 打印运行时长
         for key, values in summary.items():
             plt.figure()  # 创建一个新的图形
             plt.plot(values)
-            plt.title(f'Plot for {key}')
+            plt.title(f'Plot for {key}_{name}')
             plt.xlabel('Index')
             plt.ylabel('Value')
             # 保存每个图表为图片文件
-            plt.savefig(f'{path}{key}_plot.png')
+            plt.savefig(f'{path}{key}_{name}.png')
             plt.close()  # 关闭图形，避免内存泄漏
 
             # 将数据保存到CSV文件
             # 创建一个DataFrame，其中包含索引和对应的值
             df = pd.DataFrame({'Index': range(len(values)), 'Value': values})
             # 保存DataFrame到CSV文件
-            df.to_csv(f'Data/input/case2_linear/{key}_values.csv', index=False)
+            df.to_csv(f'Data/input/case2_linear/{key}_{name}.csv', index=False)
+        df = pd.DataFrame(summary).T
+        df.index = ['FOR'+name,'FO'+name]  # 设置索引为实验名称
+        # 将DataFrame写入CSV文件，使用追加模式，不包含列名
+        df.to_csv('experiments.csv', mode='a', header=False)
         # 所有图片保存后，显示它们
         for key, values in summary.items():
             plt.figure()

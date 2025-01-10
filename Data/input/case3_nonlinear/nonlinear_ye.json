@@ -15385,7 +15385,7 @@
     "max_length": 20,
     "global_ground": 1,
     "ground": {
-      "sig": 0.001,
+      "sig": 0.01,
       "mur": 1,
       "epr": 0,
       "gnd_mode": 1,
