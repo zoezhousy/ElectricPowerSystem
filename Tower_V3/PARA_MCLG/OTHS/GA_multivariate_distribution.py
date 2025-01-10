@@ -21,7 +21,7 @@ def GA_multivariate_distribution(parameterst):
         # The initial population size =50, The maximum number of generations= 100,
         # 遗传算法，未知数是I0，t1,t2,N,Ip,tf,th
         result = differential_evolution(
-            objhei(),
+            objhei,
             bounds,
             args=(c1, c2, c3, Ipi, tfi, thi, tstart),
             strategy='best1bin',

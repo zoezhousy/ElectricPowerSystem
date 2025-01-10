@@ -150,6 +150,7 @@ def run_MC(network,load_dict,Dmax):
     PoleXY = Line['Node_all']
     # 4. 描述电流的波形
     light_final = current_waveform_generator(Wave_Model, DSave, resultstro, resultcur, foldname)
+    light_final = np.array(light_final)
 
     DIND = stroke_result[0]
     DINDs = np.array([1 if x == 'Direct' else 0 for x in DIND])
@@ -160,7 +161,7 @@ def run_MC(network,load_dict,Dmax):
     if casemodel == 1:
         # 将double 数组转换为table
         df27 = pd.DataFrame(flash_stroke, columns=['flash', 'stroke', 'Direct1_Indirect2'])
-        return df27, parameterst, stroke_result, PoleXY
+        return df27, light_final, stroke_result, PoleXY
     else: # 特定情况
         # 间接雷数据按照Y轴正半轴（离x轴的距离）分区
         filtered_indices_ind = []
@@ -195,7 +196,7 @@ def run_MC(network,load_dict,Dmax):
 
             # globals()[f"stroke_resultindq_{i}"] = stroke_resultindq  # 使用 globals() 动态创建一个新的变量名
             stroke_result_list.append(stroke_resultindq)
-            parameterstindq = parameterst[indices]
+            parameterstindq = light_final[indices]
             parameterst_list.append(parameterstindq)
             # globals()[f"parameterstindq_{i}"] = parameterstindq
             flash_strokeindq = flash_stroke[indices]
