@@ -295,7 +295,7 @@ class Network:
         I_out = pd.DataFrame()
         if lightning.type == "Indirect":
             for i in range(len(lightning.strokes)):
-
+                
                 Er_lossy = 0
                 Ez_lossy = 0
                 epr = self.epr
