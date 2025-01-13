@@ -15385,7 +15385,7 @@
     "max_length": 20,
     "global_ground": 1,
     "ground": {
-      "sig": 0.01,
+      "sig": 0.001,
       "mur": 1,
       "epr": 0,
       "gnd_mode": 1,
@@ -15436,7 +15436,7 @@
       "mode": 2,
       "fixn": 1000,
       "Ip1stmin": 5,
-      "Ip1stmax": 200,
+      "Ip1stmax": 100,
       "tf1stmin": 0.5,
       "tf1stmax": 20,
       "Sm1stmin": 5,

@@ -181,7 +181,7 @@ def InducedVoltage_calculate(pt_start, pt_end, branch_list, lightning: Lightning
         Uout = pd.DataFrame(0, index=branch_list, columns=range(lightning.strokes[stroke_sequence].Nt), dtype=np.float64)
         return Uout
 
-def ElectricField_calculate(pt_start, pt_end, stroke: Stroke, channel, ep0, vc):
+def ElectricField_calculate(pt_start, pt_end, stroke: Stroke, channel, ep0, vc, GPU):
     """
     功能：计雷击影响下，不同时刻每个导体段上r方向和z方向的总电场
 
@@ -217,8 +217,8 @@ def ElectricField_calculate(pt_start, pt_end, stroke: Stroke, channel, ep0, vc):
     i_sr_div[0, 1:] = (np.diff(i_sr) / stroke.dt).reshape(1, -1) if isinstance(i_sr, pd.DataFrame) else np.array(np.diff(i_sr) / stroke.dt).reshape(1,-1)
     i_sr_div[0, 0] = i_sr[0, 0] / stroke.dt
 
-    Ez_air, Er_air = calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, air_or_img =0)
-    Ez_img, Er_img = calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_channel_img, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, air_or_img =1)
+    Ez_air, Er_air = calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, GPU, air_or_img =0)
+    Ez_img, Er_img = calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_channel_img, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, GPU, air_or_img =1)
 
     # 合成air和img的电场
     Ez_T = channel.dh * (Ez_air + Ez_img)
@@ -227,7 +227,7 @@ def ElectricField_calculate(pt_start, pt_end, stroke: Stroke, channel, ep0, vc):
     return Ez_T, Er_T
 
 
-def H_MagneticField_calculate(pt_start, pt_end, stroke, channel, ep0, vc):
+def H_MagneticField_calculate(pt_start, pt_end, stroke, channel, ep0, vc, GPU):
     # # 常数初始化
     # ep0 = constants.ep0, vc = constants.vc
     # # 时间步长
@@ -264,8 +264,8 @@ def H_MagneticField_calculate(pt_start, pt_end, stroke, channel, ep0, vc):
     i_sr_div[0, 1:] = (np.diff(i_sr) / stroke.dt).reshape(1, -1)
     i_sr_div[0, 0] = i_sr[0, 0] / stroke.dt
 
-    Er_air = calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, 0)
-    Er_img = calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_channel_img, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, 1)
+    Er_air = calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, GPU, 0)
+    Er_img = calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_channel_img, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, GPU ,1)
 
     # 合成air和img的电场
     Er_T = channel.dh * (Er_air + Er_img)

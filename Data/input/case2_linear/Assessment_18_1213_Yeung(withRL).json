@@ -2806,7 +2806,7 @@
 
 
   "Global": {
-    "delta_time": 2e-08,
+    "delta_time": 1e-08,
     "time": 2e-5,
     "constant_frequency": 2e4,
     "max_length": 20,
@@ -2815,7 +2815,7 @@
       "glb": 0,
       "sig": 0.001,
       "mur": 1,
-      "epr": 1,
+      "epr": 10,
       "gnd_mode":1,
       "ionisation_intensity": "",
       "ionisation_model": ""
@@ -2862,7 +2862,7 @@
       "Dymax":1500,
       "Dyp":100,
       "pointmd":200,
-      "pn": 2500,
+      "pn": 10000,
       "mode": 2,
       "fixn": 50000,
       "Ip1stmin": 5,

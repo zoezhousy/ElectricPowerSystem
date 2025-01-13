@@ -13,7 +13,7 @@ def MonteCarlo_multivariate_distribution (parameterst):
 def Compute_Light_Final(params):
     light_final = []
     a = params.shape[0]
-    for i in range(1, params.shape[0] + 1):
+    for i in range(0, params.shape[0] + 1):
         # for each quadruple of values for Ip , tf and th
         # 换算单位,实际Ipi-kA-A，tfi-μs-s，Smi-kA/μs-A/s，thi-μs-s
         Ipi, tfi, Smi, thi = params[i - 1, 2] * 1e3, params[i - 1, 3] * 1e-6, params[i - 1, 4] * (1e3 / 1e-6), \

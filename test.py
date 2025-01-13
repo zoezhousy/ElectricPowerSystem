@@ -1,30 +1,8 @@
 import matplotlib.pyplot as plt
+import pandas as pd
+from sympy import false
 
-# 数据
-x = [1, 2, 3, 4, 5,6,7,8,9,10,11,12,13,14,15]
-y =[190
-,540
-,710
-,720
-,720
-,720
-,720
-,720
-,720
-,720
-,720
-,720
-,720
-,720
-,720]
-
-# 创建图表
-plt.plot(x, y)  # 使用'o'标记每个数据点
-
-# 添加标题和标签
-plt.title('FO# for 10000 strokes')
-plt.xlabel('Index')
-plt.ylabel('FO')
-
-# 显示图表
-plt.show()
+name = "Heidler_perfect_1000_IP200"
+summary = {"nonFO_indirect":789,"nonFO_direct":0,"FO_indirect":191,"FO_direct":20,"Huri":172,"RunTime":9773.815575361252,'FOR_direct':0,'FOR_indirect':38.2}
+df = pd.DataFrame(summary,index=[name])
+df.to_csv(f'Data/input/case3_nonlinear/summary_values_ins.csv', mode='a',header=false)

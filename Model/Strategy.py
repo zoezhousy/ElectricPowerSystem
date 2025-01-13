@@ -836,7 +836,7 @@ class hybrid_nonlinear(Hybrid_Strategy):
 
     def apply(self, line_matrix, tower_matrix, sources, Nt, dt, GPU):
         print("Nonlinear hybrid calculation is used")
-
+        GPU = 0
         #OHL parameter preparing
         im_o_df = line_matrix['incidence_matrix']
         im_o = im_o_df.to_numpy()

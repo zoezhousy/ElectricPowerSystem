@@ -300,10 +300,11 @@ class Network:
                 Ez_lossy = 0
                 epr = self.epr
                 sig = self.sig
+                GPU = self.GPU_calculation
                 #if (erg, sigma_g, 0) in shared_dict:
                 Ez_T, Er_T = ElectricField_calculate(pt_start, pt_end, lightning.strokes[i],
                                                      lightning.channel,
-                                                     constants.ep0, constants.vc)  # 计算电场
+                                                     constants.ep0, constants.vc, GPU)  # 计算电场
                 if self.gnd_mode ==0:
                     Er_lossy = Er_T
                     Ez_lossy = Ez_T
@@ -311,7 +312,7 @@ class Network:
                 else:
                     H_p = H_MagneticField_calculate(pt_start, pt_end, lightning.strokes[i],
                                                     lightning.channel,
-                                                    constants.ep0, constants.vc)  # 计算磁场
+                                                    constants.ep0, constants.vc, GPU)  # 计算磁场
 
                     # 计算有损地面的电场
                     Er_lossy = ElectricField_above_lossy(-H_p, Er_T, constants, shared_dict,self.dt,epr,sig, sigma0=None)
@@ -842,7 +843,7 @@ class Network:
             df27,parameterst,stroke_result,PoleXY = run_MC(self,load_dict,Distance)
 
             MC_result_list = []
-            summary = {"nonFO_indirect":0,"nonFO_direct":0,"FO_indirect":0,"FO_direct":0,"Huri":0,"RunTime":0}
+            summary = {"nonFO_indirect":0,"nonFO_direct":0,"FO_indirect":0,"FO_direct":0,"Huri":0,"RunTime":0,'FOR_direct':0,'FOR_indirect':0}
             shared_dict = None
             index = 0
             MC_result = []
@@ -924,22 +925,26 @@ class Network:
                 false_count_direct = len(FO_direct) -true_count_direct
                 true_count_indirect = len(list(filter(lambda x: x, FO_indirect)))
                 false_count_indirect = len(FO_indirect) - true_count_indirect
-                summary["FO_direct"] = summary["FO_direct"]+true_count_direct
-                summary["FO_indirect"] = summary["FO_indirect"] + true_count_indirect
-                summary["nonFO_direct"] = summary["nonFO_direct"]+false_count_direct
-                summary["nonFO_indirect"] = summary["nonFO_indirect"] + false_count_indirect
+                summary["FO_direct"] = true_count_direct
+                summary["FO_indirect"] = true_count_indirect
+                summary["nonFO_direct"] = false_count_direct
+                summary["nonFO_indirect"] = false_count_indirect
+                summary["FOR_direct"] = 100*true_count_direct/len(FO_direct)*2
+                summary["FOR_indirect"] = 100 * true_count_indirect / len(FO_indirect) * 2
                 summary["Huri"] = huri
                 summary["RunTime"] = duration
                 print("FO_direct: ", summary["FO_direct"])
                 print("FO_indirect: ", summary["FO_indirect"])
-                print("nonFO_direct: ", summary["FO_direct"])
-                print("nonFO_indirect: ", summary["FO_indirect"])
+                print("nonFO_direct: ", summary["nonFO_direct"])
+                print("nonFO_indirect: ", summary["nonFO_indirect"])
                 print("Huri: ",summary["Huri"])
                 print("Running time: ",summary["RunTime"])  # 打印运行时长
-                df = pd.DataFrame(summary)
+                #df = pd.DataFrame(summary)
                 # 保存DataFrame到CSV文件
-                df.to_csv(f'Data/input/case3_nonlinear/summary_values_ins.csv', index=False)
-
+                name = "Heidler_loss_1000_IP100"
+                df = pd.DataFrame(summary, index=[name])
+                df.to_csv(f'Data/input/case3_nonlinear/summary_values_ins.csv', mode='a')
+                print("end")
 
     def Pre_run_MC(self, load_dict):
         ### 用大矩阵----------
@@ -1078,7 +1083,7 @@ class Network:
             print("total flash count: ", df27_list[-1].iloc[-1, 0])
             return Distance_max
     def save_result(self,summary,path):
-        name = 'Heidler_3750_lossV3'
+        name = 'Heidler_15000_loss_IP200_epr10'
         #name = 'Heidler_3750_perfectV2'
         print("FO: ", summary["FO"])
         print("FOR: ", summary["FOR"])
@@ -1100,7 +1105,7 @@ class Network:
             # 保存DataFrame到CSV文件
             df.to_csv(f'Data/input/case2_linear/{key}_{name}.csv', index=False)
         df = pd.DataFrame(summary).T
-        df.index = ['FOR'+name,'FO'+name]  # 设置索引为实验名称
+        df.index = ['FOR_'+name,'FO_'+name]  # 设置索引为实验名称
         # 将DataFrame写入CSV文件，使用追加模式，不包含列名
         df.to_csv('experiments.csv', mode='a', header=False)
         # 所有图片保存后，显示它们
