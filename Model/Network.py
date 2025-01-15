@@ -172,7 +172,7 @@ class Network:
             gnd = self.ground if self.global_ground == 1 else tower.ground
             self.PoleXY[tower.info.name] = tower.info.position[:2]
             self.tower_head_node[tower.info.name] = tower.info.Pole_Head_Node
-            self.RL_node = [[RL.node1[0],RL.node2[0]]for RL in tower.lump.resistor_inductors]
+            self.RL_node = self.RL_node+[[RL.node1[0],RL.node2[0]]for RL in tower.lump.resistor_inductors]
 
             if tower.info.con_mode == 1:
                 self.solution_type['variant_frequency'] = True
