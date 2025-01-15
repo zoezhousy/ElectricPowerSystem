@@ -38,9 +38,9 @@ if __name__ == '__main__':
         network.run_base(load_dict)
         network.sensitive_analysis(load_dict)
     elif calculation == 2:
-        distance = network.Pre_run_MC(load_dict)
-        network = Network()
-        #distance = 600
+        # distance = network.Pre_run_MC(load_dict)
+        # network = Network()
+        distance = 600
         file_name = "case3_nonlinear/nonlinear_ye"
         json_file_path = "Data/input/" + file_name + ".json"
         with open(json_file_path, 'r', encoding="utf-8") as j:

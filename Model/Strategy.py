@@ -857,7 +857,6 @@ class hybrid_nonlinear(Hybrid_Strategy):
             import cupy as cp
             print("GPU calculation is used")
             L_o, R_o, C_o, G_o, vs_o, is_o, im_o = transfer_date_to_gpu(L_o, R_o, C_o, G_o, vs_o, is_o, im_o)
-
             inv = cp.linalg.inv
             zeros = cp.zeros
             hstack = cp.hstack

@@ -941,7 +941,7 @@ class Network:
                 print("Running time: ",summary["RunTime"])  # 打印运行时长
                 #df = pd.DataFrame(summary)
                 # 保存DataFrame到CSV文件
-                name = "Heidler_loss_1000_IP100"
+                name = "Heidler_perfect_10000_IP100"
                 df = pd.DataFrame(summary, index=[name])
                 df.to_csv(f'Data/input/case3_nonlinear/summary_values_ins.csv', mode='a')
                 print("end")
@@ -1083,7 +1083,7 @@ class Network:
             print("total flash count: ", df27_list[-1].iloc[-1, 0])
             return Distance_max
     def save_result(self,summary,path):
-        name = 'Heidler_15000_loss_IP200_epr10'
+        name = 'Heidler_7500_perfect_IP200_epr4'
         #name = 'Heidler_3750_perfectV2'
         print("FO: ", summary["FO"])
         print("FOR: ", summary["FOR"])

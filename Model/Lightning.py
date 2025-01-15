@@ -30,8 +30,8 @@ class StrokeParameters:
 class Channel:
     def __init__(self, hit_pos, model='MTLE'):
         # 雷电通道相关参数
-        self.height = 1000  # 雷电通道高度
-        self.dh = 10  # 通道段长度
+        self.height = 2000  # 雷电通道高度
+        self.dh = 5  # 通道段长度
         self.N_channel_segment = int(self.height / self.dh)  # 雷电通道被划分后的个数
         self.hit_pos = hit_pos  # 雷击点的坐标
         self.channel_model = model  # 模型
