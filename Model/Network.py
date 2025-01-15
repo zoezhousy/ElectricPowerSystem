@@ -92,7 +92,7 @@ class Network:
         self.tower_head_node = {}
         self.sig=None
         self.epr = None
-
+        self.RL_node = []
 
     # 记录电网元素之间的关系
     def tower_branches(self, branches):
@@ -172,6 +172,8 @@ class Network:
             gnd = self.ground if self.global_ground == 1 else tower.ground
             self.PoleXY[tower.info.name] = tower.info.position[:2]
             self.tower_head_node[tower.info.name] = tower.info.Pole_Head_Node
+            self.RL_node = [[RL.node1[0],RL.node2[0]]for RL in tower.lump.resistor_inductors]
+
             if tower.info.con_mode == 1:
                 self.solution_type['variant_frequency'] = True
                 print("tower apply variant frequency")
@@ -545,8 +547,9 @@ class Network:
         return solution,ins_FO,SAF
     def INS_calculate(self,T,dt,H,sources):
         ins_FO = {}
-        tower_list = ["tower_8","tower_9","tower_10","tower_11"]
-        tower_head_node =[self.tower_head_node[tower] for tower in tower_list if tower in self.tower_head_node]
+        #tower_list = ["tower_8","tower_9","tower_10","tower_11"]
+        #tower_head_node =[self.tower_head_node[tower] for tower in tower_list if tower in self.tower_head_node]
+
         # for tower in self.towers:
         #     #tower_head_node.append(tower.info.Pole_Head_Node)
         #     for ins in tower.devices.insulators:
@@ -555,7 +558,7 @@ class Network:
         # ins_FO["FO"] = False
         if not self.switch_disruptive_effect_models and not self.voltage_controled_switchs and not self.time_controled_switchs and not self.nolinear_resistors:
             strategy = Strategy.MC_Linear()
-            ins_FO =strategy.apply(T,dt,H,sources,tower_head_node)
+            ins_FO =strategy.apply(T,dt,H,sources,self.RL_node)
         else:
             strategy = Strategy.INS_NonLinear()
             ins_FO = strategy.apply(T,dt,H,sources)
@@ -958,7 +961,8 @@ class Network:
         self.initialize_network(load_dict,self.VF)
         self.combine_parameter_matrix()
         branches,nodes = self.calculate_branches(self.max_length)
-        nodes.remove('ref')
+        if 'ref' in nodes:
+            nodes.remove('ref')
 
 
         #### 用小矩阵-----------

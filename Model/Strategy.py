@@ -251,7 +251,7 @@ class Linear(Strategy):
         return solution
 
 class MC_Linear(Strategy):
-    def apply(self,Nt,dt,H,sources,tower_head_node):
+    def apply(self,Nt,dt,H,sources,RL_node):
         print("linear calculation is used")
         C = np.array(H["capacitance_matrix"])  # 点点
         G = np.array(H["conductance_matrix"])
@@ -280,9 +280,12 @@ class MC_Linear(Strategy):
 
             out[:, i + 1] = np.copy(temp_result)
         solution = pd.DataFrame(out,index=H["capacitance_matrix"].columns.tolist() + H["inductance_matrix"].columns.tolist())
-        for x in tower_head_node:
-            #if abs(np.max(out[H["capacitance_matrix"].columns.tolist().index(x[0]), :])) > 75000:
-            if np.max(abs(out[H["capacitance_matrix"].columns.tolist().index(x), :])) > 75000:
+        # for x in tower_head_node:
+        #     #if abs(np.max(out[H["capacitance_matrix"].columns.tolist().index(x[0]), :])) > 75000:
+        #     if np.max(abs(out[H["capacitance_matrix"].columns.tolist().index(x), :])) > 75000:
+        #         return True
+        for x in RL_node:
+            if (solution.loc[x[0]]-solution.loc[x[1]]).max() > 75000:
                 return True
         return  False
 
