@@ -285,7 +285,7 @@ class MC_Linear(Strategy):
         #     if np.max(abs(out[H["capacitance_matrix"].columns.tolist().index(x), :])) > 75000:
         #         return True
         for x in RL_node:
-            if (solution.loc[x[0]]-solution.loc[x[1]]).max() > 75000:
+            if abs(solution.loc[x[0]]-solution.loc[x[1]]).max() > 75000:
                 return True
         return  False
 
@@ -1151,7 +1151,7 @@ class Measurement(Strategy):
         results = {}
         for key, value in measurement.items():
             data_type = value[0]  # 0:'branch',1: 'normal lump'
-            measurement_type = value[1]  # 1:'current',2:'voltage'
+            measurement_type = value[1]  # 1:'current',2:'voltage,3:"P",4:"E"
             # 处理支路名或节点名
             if data_type == 0:
                 branch_name = key
@@ -1162,20 +1162,20 @@ class Measurement(Strategy):
                 p = [a * b for a, b in zip(current, voltage)] if current and voltage else None
                 E = sum([i * dt for i in p]) if p else None
                 if measurement_type == 1:
-                    results["current"] = current
+                    results[(key, value[3], value[4],"current")] = current
                 elif measurement_type == 2:
-                    results["voltage"] = voltage
+                    results[(key, value[3], value[4],"voltage")] = voltage
                 elif measurement_type == 3:
-                    results["P"] = p
+                    results[(key, value[3], value[4],"p")] = p
                 elif measurement_type == 4:
-                    results["E"] = E
-                    results["P"] = p
-                    results["voltage"] = voltage
-                    results["current"] = current
+                    results[(key, value[3], value[4],"E")] = E
+                    results[(key, value[3], value[4],"p")] = p
+                    results[(key, value[3], value[4],"voltage")] = voltage
+                    results[(key, value[3], value[4],"current")] = current
                 elif measurement_type == 11:
-                    results["E"] = E
+                    results[(key, value[3], value[4],"E")] = E
 
-                results["index"] = [key, value[3], value[4]]
+                #results["index"] = [key, value[3], value[4]]
             elif data_type == 1:
                 lump_name = key
                 # 处理支路名可能是列表的情况
@@ -1194,20 +1194,20 @@ class Measurement(Strategy):
                     E = sum([i * dt for i in p]) if p else None
 
                     if measurement_type == 1:
-                        dict_result["current"] = current
+                        dict_result[(lump_name,bran, n1, n2,"current")] = current
                     elif measurement_type == 2:
-                        dict_result["voltage"] = voltage
+                        dict_result[(lump_name,bran, n1, n2,"voltage")] = voltage
                     elif measurement_type == 3:
-                        dict_result["P"] = p
+                        dict_result[(lump_name,bran, n1, n2,"P")] = p
                     elif measurement_type == 4:
-                        dict_result["current"] = current
-                        dict_result["voltage"] = voltage
-                        dict_result["P"] = p
-                        dict_result["E"] = E
+                        dict_result[(lump_name,bran, n1, n2,"current")] = current
+                        dict_result[(lump_name,bran, n1, n2,"voltage")] = voltage
+                        dict_result[(lump_name,bran, n1, n2,"P")] = p
+                        dict_result[(lump_name,bran, n1, n2,"E")] = E
                     elif measurement_type == 11:
-                        dict_result["E"] = E
-                dict_result["index"] = [bran, n1, n2]
-                results[lump_name] = dict_result
+                        dict_result[(lump_name,bran, n1, n2,"E")] = E
+                # dict_result["index"] = [bran, n1, n2]
+                # results[lump_name] = dict_result
         return results
 
 

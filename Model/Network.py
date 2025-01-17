@@ -99,8 +99,10 @@ class Network:
         tower_nodes = []
         for tower in self.towers:
             for wire in list(tower.wires.get_all_wires().values()):
-                startnode = {wire.start_node.name: [wire.start_node.x, wire.start_node.y, wire.start_node.z]}
-                endnode = {wire.end_node.name: [wire.end_node.x, wire.end_node.y, wire.end_node.z]}
+                startnode = {wire.start_node.name: [wire.start_node.x+tower.info.position[0], wire.start_node.y+tower.info.position[1],
+                                                    wire.start_node.z+tower.info.position[2]]}
+                endnode = {wire.end_node.name: [wire.end_node.x+tower.info.position[0], wire.end_node.y+tower.info.position[1],
+                                                wire.end_node.z+tower.info.position[2]]}
                 tower_nodes.append(wire.start_node.name)
                 tower_nodes.append(wire.end_node.name)
                 branches[wire.name] = [startnode, endnode, tower.name]
@@ -266,13 +268,13 @@ class Network:
                 U_out, I_out, shared_dict = self.source_calculate(lightning, light["area"], bran,
                                                      light["position"], nodes, branches, constants,share_dict)
                 sources = self.add_source(U_out, I_out)
-                return sources,len(lightning.strokes)
+                return sources
             if light["area"].split("_")[0] == "tower":
                 U_out, I_out, share_dict = self.source_calculate(lightning,
                                                                  light["area"], light["wire"], light["position"], nodes,
                                                                  branches, constants, share_dict)
                 sources = self.add_source(U_out, I_out)
-                return sources,len(lightning.strokes)
+                return sources
         else:
             U_out = pd.DataFrame()
             I_out = pd.DataFrame()
@@ -281,7 +283,7 @@ class Network:
                     U_out = U_out.add(model.voltage_source_matrix, fill_value=0).fillna(0)
                     I_out = I_out.add(model.current_source_matrix, fill_value=0).fillna(0)
             sources = pd.concat([U_out, I_out], axis=0)
-            return sources, []
+            return sources
 
 
     # 输出U/I
@@ -564,13 +566,13 @@ class Network:
             ins_FO = strategy.apply(T,dt,H,sources)
         return ins_FO
     def calculate(self,T,dt,H,sources):
-        ins_FO = {}
-        SAF = []
-        for tower in self.towers:
-            for ins in tower.devices.insulators:
-                for switch in ins.switch_disruptive_effect_models:
-                    ins_FO[switch.name] = {'FO': 0,"Tower":tower.name,"Wire":switch.bran}
-        ins_FO["FO"] = False
+        # ins_FO = {}
+        # SAF = []
+        # for tower in self.towers:
+        #     for ins in tower.devices.insulators:
+        #         for switch in ins.switch_disruptive_effect_models:
+        #             ins_FO[switch.name] = {'FO': 0,"Tower":tower.name,"Wire":switch.bran}
+        # ins_FO["FO"] = False
         if not self.switch_disruptive_effect_models and not self.voltage_controled_switchs and not self.time_controled_switchs and not self.nolinear_resistors:
             strategy = Strategy.Linear()
             solution =strategy.apply(T,dt,H,sources)
@@ -581,7 +583,7 @@ class Network:
                 if switch in ins_FO.keys():
                     ins_FO[switch]["FO"] = 1
                     ins_FO["FO"] = True
-        return solution,ins_FO
+        return solution
 
     def calculate_of_hybrid_mode(self, line_matrix, tower_matrix, sources, Nt, dt, GPU):
         """
@@ -677,7 +679,7 @@ class Network:
         # 3. 初始化源，计算结果
         share_dict = {}
         constants = Constant()
-        sources,stroke_num = self.source_initial(load_dict, nodes,branches,constants,share_dict)
+        sources = self.source_initial(load_dict, nodes,branches,constants,share_dict)
 
         self.H = {"Line": line_matrix,"Tower": tower_matrix}
         result_tower, other = self.calculate_of_hybrid_mode(line_matrix, tower_matrix, sources, self.Nt, self.dt, self.GPU_calculation)
@@ -690,7 +692,9 @@ class Network:
         # pacsv.write_csv(result_v_ohl, "Data/Output/result_v_ohl_output.csv")
         # pacsv.write_csv(result_i_ohl, "Data/Output/result_i_ohl_output.csv")
         pacsv.write_csv(sources_pa, "Data/Output/result_lightning.csv")
+        measure_result = self.run_measure(result_tower)
 
+        return measure_result
         # result_tower.to_csv("Data/Output/result_tower_output.csv")
         # result_v_ohl.to_csv("Data/Output/result_v_ohl_output.csv")
         # result_i_ohl.to_csv("Data/Output/result_i_ohl_output.csv")
@@ -700,10 +704,11 @@ class Network:
         hybrid = load_dict["Global"]["Hybrid_method"]
         if hybrid == 1:
             self.solution_type['hybrid'] = True
-            self.run_hybrid(load_dict)
+            measure_result = self.run_hybrid(load_dict)
 
         else:
-            self.run(load_dict)
+            measure_result = self.run(load_dict)
+        return measure_result
     # 基础模块合并运行
     def run(self, load_dict, *basestrategy):
         # 0. 手动预设值
@@ -725,14 +730,17 @@ class Network:
         share_dict = {}
         start_time = time.time()  # 记录开始时间
         constants = Constant()
-        sources,stroke_num = self.source_initial(load_dict, nodes,branches,constants,share_dict)
+        sources = self.source_initial(load_dict, nodes,branches,constants,share_dict)
         end = time.time()  # 记录开始时间
         print(f"Total running time: {end - start_time} seconds")  # 打印运行时长
         solution = self.calculate(self.Nt, self.dt, self.H, sources)
         end2 = time.time()  # 记录开始时间
         pd.DataFrame(solution[0]).to_csv("Data/Output/combine_output.csv")
+        measure_result = self.run_measure(solution)
+
         print(f"Total running time: {end2 - end} seconds")  # 打印运行时长
         print(solution)
+        return measure_result
 
     def sensitive_analysis(self, load_dict):
 
@@ -793,10 +801,10 @@ class Network:
                                         load_dict["Sensitivity_analysis"]["ROD"]["l"])
 
         print("you are starting sensitive analysis")
-    def run_measure(self):
+    def run_measure(self,solution):
         # lumpname/branname: label(bran0/lump1),probe,branname,n1,n2,(towername)
         if self.measurement:
-            return Strategy.Measurement().apply(measurement=self.measurement, solution=self.solution,dt=self.dt)
+            return Strategy.Measurement().apply(measurement=self.measurement, solution=solution,dt=self.dt)
     def run_MC(self,load_dict,Distance):
     ### 用大矩阵----------
         # 0. 手动预设值
@@ -944,10 +952,9 @@ class Network:
                 print("Running time: ",summary["RunTime"])  # 打印运行时长
                 #df = pd.DataFrame(summary)
                 # 保存DataFrame到CSV文件
-                name = "Heidler_perfect_10000_IP100"
-                df = pd.DataFrame(summary, index=[name])
-                df.to_csv(f'Data/input/case3_nonlinear/summary_values_ins.csv', mode='a')
-                print("end")
+
+
+                return summary
 
     def Pre_run_MC(self, load_dict):
         ### 用大矩阵----------
@@ -1087,7 +1094,7 @@ class Network:
             print("total flash count: ", df27_list[-1].iloc[-1, 0])
             return Distance_max
     def save_result(self,summary,path):
-        name = 'Heidler_7500_perfect_IP200_epr4'
+        name = 'Heidler_7500_loss_IP200_epr4_dt3000'
         #name = 'Heidler_3750_perfectV2'
         print("FO: ", summary["FO"])
         print("FOR: ", summary["FOR"])
@@ -1107,7 +1114,7 @@ class Network:
             # 创建一个DataFrame，其中包含索引和对应的值
             df = pd.DataFrame({'Index': range(len(values)), 'Value': values})
             # 保存DataFrame到CSV文件
-            df.to_csv(f'Data/input/case2_linear/{key}_{name}.csv', index=False)
+            df.to_csv(f'Data/input/case4_linear/{key}_{name}.csv', index=False)
         df = pd.DataFrame(summary).T
         df.index = ['FOR_'+name,'FO_'+name]  # 设置索引为实验名称
         # 将DataFrame写入CSV文件，使用追加模式，不包含列名
@@ -1121,7 +1128,23 @@ class Network:
             plt.ylabel('Value')
             plt.show()
             # self.run_multiprocessed(MC_result, nodes, branches,shared_dict,PoleXY)
-
+    def show_result(self,dict):
+        for key, values in dict.items():
+            plt.figure()  # 创建一个新的图形
+            plt.plot(values)
+            plt.title(f'Plot for {key}')
+            plt.xlabel('Index')
+            plt.ylabel('Value')
+            # 保存每个图表为图片文件
+            #plt.savefig(f'{path}{key}.png')
+            plt.close()  # 关闭图形，避免内存泄漏
+        for key, values in dict.items():
+            plt.figure()
+            plt.plot(values)
+            plt.title(f'Plot for {key}')
+            plt.xlabel('Index')
+            plt.ylabel('Value')
+            plt.show()
     def run_multiprocessed(self, MC_results, nodes, branches,shared_dict,PoleXY):
         # 创建一个Manager对象，用于创建共享字典
         # with Manager() as manager:

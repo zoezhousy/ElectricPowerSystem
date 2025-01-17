@@ -34,7 +34,7 @@
         {
           "type": "air",
           "bran": "Y01_Tower_1",
-          "probe": null,
+          "probe": 1,
           "node1": "X01_Tower_1",
           "node2": "X09_Tower_1",
           "pos_1": [
@@ -71,7 +71,7 @@
         {
           "type": "air",
           "bran": "Y02_Tower_1",
-           "probe": null,
+           "probe": 1,
           "node1": "X02_Tower_1",
           "node2": "X05_Tower_1",
           "pos_1": [
@@ -10342,16 +10342,17 @@
       }
     }
   ],
-  "Source": {
+
+    "Source": {
     "Lightning": {
-      "type": "Indirect",
-        "area": "ground",
-        "wire": "Y02",
-        "cir_id": 3001,
-        "phase_id": "A",
+      "type": "Direct",
+        "area": "tower_1",
+        "wire": "Y01_Tower_1",
+        "cir_id": null,
+        "phase_id": null,
         "position": [
-          500,
-          50,
+          10,
+          10,
           0
          ],
         "model": "MTLE",
@@ -10359,14 +10360,13 @@
         "Stroke": [
           {
             "type": "Heidler",
-            "duration": 2e-5,
-            "parameters": null,
-            "parameter_set": "0.25/2.5us"
+            "duration": 1e-4,
+            "parameters": [1e4, 8, 20, 2.4],
+            "parameter_set": "2.6/50us"
           }
         ]
     }
-  }
-,
+  },
   "Global": {
     "delta_time": 1e-8,
     "time": 3e-5,
@@ -10426,7 +10426,7 @@
       "pointmd":200,
       "pn": 5000,
       "mode": 2,
-      "fixn": 50000,
+      "fixn": 5000,
       "Ip1stmin": 5,
       "Ip1stmax": 200,
       "tf1stmin": 0.5,

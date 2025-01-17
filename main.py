@@ -8,6 +8,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 import pandas as pd
+
+
+def show_result(dict):
+    for key, values in dict.items():
+        plt.figure()  # 创建一个新的图形
+        plt.plot(values)
+        plt.title(f'Plot for {key}')
+        plt.xlabel('Index')
+        plt.ylabel('Value')
+        # 保存每个图表为图片文件
+        plt.savefig(f'{path}{key}.png')
+        plt.close()  # 关闭图形，避免内存泄漏
+    for key, values in dict.items():
+        plt.figure()
+        plt.plot(values)
+        plt.title(f'Plot for {key}')
+        plt.xlabel('Index')
+        plt.ylabel('Value')
+        plt.show()
+
+
 if __name__ == '__main__':
     # 1. 接收到创建新电网指令
     #file_name = "01_8_ye"
@@ -17,8 +38,9 @@ if __name__ == '__main__':
     #file_name = "case3_nonlinear/nonlinear_ye"
     #file_name = "case2_linear/Assessment_18_1213_Yeung"
     #file_name = "case2_linear/Assessment_18_1213_Yeung(withRL)"
-    file_name = "case4_linear/inducedvoltagetest_threephase_withSW"
-    json_file_path = "Data/input/" + file_name + ".json"
+    path = "Data/input/case4_linear/"
+    file_name = "inducedvoltagetest_threephase_withSW"
+    json_file_path = path + file_name + ".json"
     # 0. read json file
     with open(json_file_path, 'r', encoding="utf-8") as j:
         load_dict = json.load(j)
@@ -33,20 +55,29 @@ if __name__ == '__main__':
     calculation = load_dict["Global"]["Calculation_Model"]
     # 基础模块
     if calculation == 0:
-        network.run_base(load_dict)
+        result = network.run_base(load_dict)
+        df_measure = pd.DataFrame(result)
+        df_measure.to_csv(path+'result.csv', index=False, header=True)
+        show_result(df_measure)
     # 灵敏度分析模块
     elif calculation == 1:
-        network.run_base(load_dict)
-        network.sensitive_analysis(load_dict)
+        result_before = network.run_base(load_dict)
+        result_after = network.sensitive_analysis(load_dict)
     elif calculation == 2:
         distance = network.Pre_run_MC(load_dict)
         network = Network()
         #distance = 600
-        file_name = "case3_nonlinear/nonlinear_ye"
-        json_file_path = "Data/input/" + file_name + ".json"
-        with open(json_file_path, 'r', encoding="utf-8") as j:
-            load_dict = json.load(j)
-        network.run_MC(load_dict,distance)
+        # file_name = "case3_nonlinear/nonlinear_ye"
+        # json_file_path = "Data/input/" + file_name + ".json"
+        # with open(json_file_path, 'r', encoding="utf-8") as j:
+        #     load_dict = json.load(j)
+        result = network.run_MC(load_dict,distance)
+
+        name = "Heidler_perfect_10000_IP100"
+        df = pd.DataFrame(result, index=[name])
+        df.to_csv(f'{path}summary_values_ins.csv', mode='a')
+
+
 
 
     # 二、灵敏度分析模块
