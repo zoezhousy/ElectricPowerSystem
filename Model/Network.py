@@ -593,9 +593,9 @@ class Network:
         match solution_type_id:
             case '1000':
                 strategy = Strategy.hybrid_linear()
-                tower_list = ["tower_8", "tower_9", "tower_10", "tower_11"]
-                tower_head_node = [self.tower_head_node[tower] for tower in tower_list if tower in self.tower_head_node]
-                return strategy.apply(line_matrix, tower_matrix, sources, Nt, dt, GPU,tower_head_node)
+                # tower_list = ["tower_8", "tower_9", "tower_10", "tower_11"]
+                # tower_head_node = [self.tower_head_node[tower] for tower in tower_list if tower in self.tower_head_node]
+                return strategy.apply(line_matrix, tower_matrix, sources, Nt, dt, GPU,self.RL_node)
             case '1001':
                 raise Exception('The variant_step module is not accessible.')
             case '1010':

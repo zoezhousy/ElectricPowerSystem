@@ -635,7 +635,7 @@ class hybrid_linear(Hybrid_Strategy):
     def __init__(self):
         super().__init__()
 
-    def apply(self, line_matrix, tower_matrix, sources, Nt, dt, GPU,tower_head_node):
+    def apply(self, line_matrix, tower_matrix, sources, Nt, dt, GPU,RL_node):
         print("Linear Hybrid calculation is used")
 
         im_o_df = line_matrix['incidence_matrix']
@@ -718,9 +718,9 @@ class hybrid_linear(Hybrid_Strategy):
         results.drop_duplicates(inplace=True)
         results = results.add(result_i_ohl, fill_value=0).fillna(0)
         broke = {"SDEM":[]}
-        for x in tower_head_node:
+        for x in RL_node:
             #if abs(np.max(out[H["capacitance_matrix"].columns.tolist().index(x[0]), :])) > 75000:
-            if results.loc[x].abs().max() > 75000:
+            if (results.loc[x[0]]-results.loc[x[0]]).abs().max() > 75000:
                 broke["SDEM"].append(x)
 
         return results, broke
