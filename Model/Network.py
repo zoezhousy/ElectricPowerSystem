@@ -299,7 +299,7 @@ class Network:
         I_out = pd.DataFrame()
         if lightning.type == "Indirect":
             for i in range(len(lightning.strokes)):
-                
+
                 Er_lossy = 0
                 Ez_lossy = 0
                 epr = self.epr
@@ -1420,87 +1420,87 @@ class Network:
                 FO_indirect.append(False)
         return FO_direct,FO_indirect,huri
 
-    def Find_Dmax(self,MC_result, nodes, branches,shared_dict,dataset):
-        icurr = []
-       # dataset = []
+    @staticmethod
+    def handle_no_ins(mc, flash_position, poleXY, dataset):
+        distances = []
+        for coord in poleXY.values():
+            distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
+            distances.append((coord, distance))
+        distances.sort(key=lambda item: item[1])
+        closest_two = distances[:2]
+        PoleApp = [
+            closest_two[0][0][0], closest_two[0][0][1],
+            closest_two[1][0][0], closest_two[1][0][1],
+            closest_two[0][1], closest_two[1][1]
+        ]
+        dataset.append(np.append(np.append(mc[0].strokes[0].parameters, flash_position), PoleApp))
+
+    @staticmethod
+    def process_mc(mc, nodes, branches, self_ref, index, shared_dict,
+                   calculate_ins, dataset, R):
+        """
+        A static method: used as the target in `ProcessPoolExecutor.map()`.
+        """
+        flash_position = mc[0].channel.hit_pos[:2]
+
+        # Direct stroke
+        if mc[0].type == "Direct":
+            ins = process_item(mc, nodes, branches, self_ref, index, shared_dict, calculate_ins)
+            return ins, None
+
+        # If dataset is empty, handle that first
+        if len(dataset) == 0:
+            ins = process_item(mc, nodes, branches, self_ref, index, shared_dict, calculate_ins)
+            if ins:
+                return ins, None
+            else:
+                # call handle_no_ins
+                Network.handle_no_ins(mc, flash_position, self_ref.PoleXY, dataset)
+                return False, None
+
+        # Otherwise, Huri_Method
+        stroke = mc[0].strokes[0]
+        icur = np.append(stroke.parameters, flash_position)
+        result = Huri_Method(R, dataset, icur)
+        if result == 1:
+            return False, None
+        else:
+            ins = process_item(mc, nodes, branches, self_ref, index, shared_dict, calculate_ins)
+            return ins, None
+
+    def Find_Dmax(self, MC_result, nodes, branches, shared_dict, dataset):
+        """
+        use `Network.process_mc` as the function for executor.map
+        """
         FO = []
         R = 100
-        constants = Constant()
-        constants.ep0 = 8.85e-12
         index = 0
         calculate_ins = 1
         huri = 0
-        for MC in MC_result:
-            if MC[0].type == "Direct":
-                #solution,ins = process_item(MC, nodes, branches, self,index,shared_dict,calculate_ins)
-                ins = process_item(MC, nodes, branches, self, index, shared_dict, calculate_ins)
-                index = index+1
-                #if ins["FO"]:
-                if ins:
-                    FO.append(ins)
-                else:
-                    FO.append(False)
-                continue
-            flash_position = MC[0].channel.hit_pos[:2]
-            if len(dataset) == 0:
-                #solution, ins = process_item(MC, nodes, branches, self, index, shared_dict,calculate_ins)
-                ins = process_item(MC, nodes, branches, self, index, shared_dict, calculate_ins)
-                index = index + 1
-                #if ins["FO"]:
-                if ins:
-                    FO.append(ins)
-                    continue
-                else:
-                    distances = []
-                    for coord in list(self.PoleXY.values()):
-                        distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
-                        distances.append((coord, distance))
-                    distances.sort(key=lambda item: item[1])
-                    closest_two = distances[:2]
-                    PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
-                        , closest_two[0][1], closest_two[1][1]]
-                    dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
-                    FO.append(False)
-                    continue
-            if len(dataset)>0:
-                #for i,stroke in enumerate(MC[0].strokes):
-                stroke = MC[0].strokes[0]
-                icur = np.append(stroke.parameters,flash_position)
-                result = Huri_Method(R,dataset,icur)
-                if result ==1:
-                    FO.append(False)
-                    huri = huri+1
-                    distances = []
-                    for coord in list(self.PoleXY.values()):
-                        distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
-                        distances.append((coord, distance))
-                    distances.sort(key=lambda item: item[1])
-                    closest_two = distances[:2]
-                    PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
-                        , closest_two[0][1], closest_two[1][1]]
-                    dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
 
-                    print("using Huri skip calculation")
-                    continue
-            #solution, ins = process_item(MC, nodes, branches, self, index, shared_dict,calculate_ins)
-            ins = process_item(MC, nodes, branches, self, index, shared_dict, calculate_ins)
-            index = index + 1
-           # if ins["FO"]:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
+            # map each MC in MC_result, and pass all other parameters to `process_mc`.
+            results = list(executor.map(
+                Network.process_mc,
+                MC_result,
+                [nodes] * len(MC_result),
+                [branches] * len(MC_result),
+                [self] * len(MC_result),
+                [index] * len(MC_result),
+                [shared_dict] * len(MC_result),
+                [calculate_ins] * len(MC_result),
+                [dataset] * len(MC_result),
+                [R] * len(MC_result)
+            ))
+
+        # `results`: list (ins, _) from `process_mc`
+        for ins, _ in results:
             if ins:
                 FO.append(ins)
-
             else:
-                distances = []
-                for coord in list(self.PoleXY.values()):
-                    distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
-                    distances.append((coord, distance))
-                distances.sort(key=lambda item: item[1])
-                closest_two = distances[:2]
-                PoleApp = [closest_two[0][0][0],closest_two[0][0][1],closest_two[1][0][0],closest_two[1][0][1]
-                                                ,closest_two[0][1],closest_two[1][1]]
-                dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
                 FO.append(False)
-        return FO,huri,dataset
+
+        return FO, huri, dataset
 
 def process_calculate(MC, nodes, branches, self_ref,index,shared_dict,calculate_ins):
     constants = Constant()
