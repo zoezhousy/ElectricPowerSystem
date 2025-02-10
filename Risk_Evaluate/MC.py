@@ -74,7 +74,10 @@ def run_MC(network,load_dict,Dmax):
         segment_num = int(np.ceil(length / network.max_length))
         Line["segments"].append(segment_num)
 
-
+    # 雨数
+    Line['Node']= Line['Node_all'][:, 1:3]
+    Line[ 'Edges']= Line['Edge_all'][:, 1: 3]
+    Line['node_type'] = [0] + [1] * (Line['Node'].shape[0] - 2) + [0]  # 0-matchingplot(包围线距离=0），1-endpoint（包围线距离=d）这里表示首位两个点的包围线直接过端点
     Line["SWnumber"] = np.array(Line["SWnumber"]).reshape(1, len(network.OHLs))
     Line["Pcnumber"] = np.array(Line["Pcnumber"]).reshape(1, len(network.OHLs))
     Line["segments"] = np.array(Line["segments"]).reshape(1, len(network.OHLs))

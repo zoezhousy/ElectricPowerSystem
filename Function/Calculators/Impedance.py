@@ -133,9 +133,15 @@ def calculate_inductance_of_round_wires_inside_sheath(core_wires_r, core_wires_o
     ks = mu0 / (2 * np.pi)
 
     dj = np.tile(core_wires_offset, (1, Npha))
-    L = ks * np.log(dj.T / sheath_inner_radius * np.sqrt(
-        (didk ** 2 + sheath_inner_radius ** 4 - 2 * didk * sheath_inner_radius ** 2 * np.cos(angle)) / (
-                    didk ** 2 + dj.T ** 4 - 2 * didk * dj.T ** 2 * np.cos(angle))))
+    # L = ks * np.log(dj.T / sheath_inner_radius * np.sqrt(
+    #     (didk ** 2 + sheath_inner_radius ** 4 - 2 * didk * sheath_inner_radius ** 2 * np.cos(angle)) / (
+    #                 didk ** 2 + dj.T ** 4 - 2 * didk * dj.T ** 2 * np.cos(angle))))
+    L = np.log(sheath_inner_radius / np.sqrt(dj ** 2 + dj.T**2 - 2 * didk * np.cos(angle)))
+    for n in range(15):
+        n1 = np.ones((Npha, Npha)) / (n+1)
+        np.fill_diagonal(n1, 0)
+        L -= (didk / sheath_inner_radius ** 2) ** (n + 1) * np.cos((n + 1) * angle) / n1
+    L *= ks
     L_diag = ks * np.log(sheath_inner_radius / core_wires_r * (1 - (core_wires_offset / sheath_inner_radius) ** 2))
     np.fill_diagonal(L, L_diag)
     return L
@@ -168,6 +174,62 @@ def calculate_sheath_internal_impedance(sheath_mur, sheath_sig, sheath_epr, shea
             besseli(0, Rsa) * besselk(1, Rsb) + besseli(1, Rsb) * besselk(0, Rsa)) / (
                         besseli(1, Rsb) * besselk(1, Rsa) - besseli(1, Rsa) * besselk(1, Rsb))
     return Zinternal
+
+
+def calculate_sheath_internal_impedance_multi_core(core_wires_r, core_wires_angle, core_wires_offset, sheath_mur, sheath_sig, sheath_epr, sheath_inner_radius, sheath_r,
+                                                   frq, constants):
+    mu0, ep0 = constants.mu0, constants.ep0
+    omega = 2 * np.pi * frq
+    # Mu_s = mu0 * sheath_mur
+    Mu_s = mu0
+    Nf = frq.size
+    gamma_s = np.sqrt(1j * Mu_s * omega * (sheath_sig + 1j * omega * ep0 * sheath_epr))
+    Rsa = sheath_inner_radius * gamma_s
+    Rsb = sheath_r * gamma_s
+    factor = 1j * omega * mu0 / (2 * np.pi * Rsa)
+    Npha = core_wires_r.shape[0]
+    tmat = np.tile(core_wires_angle, (1, Npha))
+    angle = (tmat - tmat.T) * np.pi / 180
+    didk = core_wires_offset * core_wires_offset.T
+
+    Z = -(besseli(0, Rsa)*besselk(1, Rsb)+besselk(0, Rsa)*besseli(1, Rsb))/(besseli(1, Rsa)*besselk(1, Rsb)-besseli(1, Rsb)*besselk(1,Rsa))
+    Z = np.tile(Z, (Npha, Npha))
+    for n in range(15):
+        n1 = np.ones((Npha, Npha)) / (n+1)
+        np.fill_diagonal(n1, 0)
+        delta = - besseli(n+2, Rsa)*besselk(n,Rsb)+besselk(n+2,Rsa)*besseli(n,Rsb)
+        Z += (didk / sheath_inner_radius**2)**(n+1)*np.cos((n+1)*angle) * (2 /delta * (besselk(n,Rsb)*besseli(n+1,Rsa)+besseli(n,Rsb)*besselk(n+1,Rsa)))
+
+    Z *= factor
+    return Z
+
+def calculate_sheath_internal_impedance_multi_core_inf_sheath(core_wires_r, core_wires_angle, core_wires_offset, sheath_mur, sheath_sig, sheath_epr, sheath_inner_radius, sheath_r,
+                                                   frq, constants):
+    mu0, ep0 = constants.mu0, constants.ep0
+    omega = 2 * np.pi * frq
+    # Mu_s = mu0 * sheath_mur
+    Mu_s = mu0
+    Nf = frq.size
+    gamma_s = np.sqrt(1j * Mu_s * omega * (sheath_sig + 1j * omega * ep0 * sheath_epr))
+    Rsa = sheath_inner_radius * gamma_s
+    Rsb = sheath_r * gamma_s
+    factor = 1j * omega * mu0 / (2 * np.pi)
+    Npha = core_wires_r.shape[0]
+    tmat = np.tile(core_wires_angle, (1, Npha))
+    angle = (tmat - tmat.T) * np.pi / 180
+    didk = core_wires_offset * core_wires_offset.T
+
+    Z = besselk(0, Rsa)/besselk(1, Rsa) / Rsa
+    Z = np.tile(Z, (Npha, Npha))
+    for n in range(15):
+        # delta = 2 * (n + 1) + Rsa * besselk(n, Rsa) / besselk(n + 1, Rsa)
+        n1 = np.ones((Npha, Npha)) / (n+1)
+        np.fill_diagonal(n1, 0)
+        delta = (n + 1) * besselk(n+1, Rsa) - Rsa * besselkp(n+1,Rsa)
+        Z += (didk / sheath_inner_radius ** 2) ** (n + 1) * np.cos((n + 1) * angle) * (2 * besselk(n+1, Rsa) / delta - n1)
+        # Z += 2 * (didk / sheath_inner_radius ** 2) ** (n+1) / delta * np.cos((n + 1) * angle)
+    Z *= factor
+    return Z
 
 
 def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, outer_radius, Frq, constants):

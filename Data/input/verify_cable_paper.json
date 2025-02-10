@@ -35,15 +35,15 @@
         "core_num": 3,
         "armor_num": 1,
         "delta_L": 20,
-        "mode_con": 1,
-        "mode_gnd": 2
+        "con_mode": 0,
+        "gnd_mode": 1
     },
     "ground": {
       "glb": 1,
       "sig": 1e-2,
       "mur": 1,
       "epr": 1,
-      "gnd_model": "Lossy",
+      "gnd_mode": 1,
       "ionisation_intensity": "weak",
       "ionisation_model": "isolational"
     },
@@ -159,12 +159,16 @@
     "time": 0.001,
     "constant_frequency": 50,
     "max_length": 10000,
+    "global_ground": 1,
+    "Hybrid_method": 1,
+    "GPU_calculation": 0,
+    "Calculation_Model": 0,
     "ground": {
       "glb": 1,
       "sig": 0.01,
       "mur": 1,
       "epr": 1,
-      "gnd_model": "Lossy",
+      "gnd_mode": 1,
       "ionisation_intensity": "",
       "ionisation_model": ""
     }

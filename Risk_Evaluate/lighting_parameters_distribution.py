@@ -4,15 +4,17 @@ from matplotlib.path import Path
 import os
 import pandas as pd
 from collections import Counter
-
+from shapely.geometry import Polygon
+from shapely.geometry import Point
+import random
 
 def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname):
     # 绘图
     plt.close('all')
 
     # struct获取每个变量名
-    casemodel = MC_lgtn['casemodel']
-    mid_points = MC_lgtn['mid_points']
+    casemodel=MC_lgtn['casemodel']
+    mid_points=MC_lgtn['mid_points']
     Dymax = MC_lgtn['Dymax']
     Dyp = MC_lgtn["Dyp"]
     Ip1stmin = MC_lgtn['Ip1stmin']
@@ -46,6 +48,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
     Coordinates = Line['Node']
     Edges = Line['Edges'].astype(int)
     XY_need3 = resultedge['XY']
+    polygonArea = resultedge['area']
 
     # python特定排序从0开始
     Edges -= 1
@@ -65,7 +68,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
     # 不同情况对应的参数
     # 一般情况(N是随机的)
     sN_all = None
-    if casemodel == 1:
+    if casemodel==1:
         # fixed total number of flashes
         if mode == 1:
             flash = fixn
@@ -100,15 +103,15 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
                 elif sN_init < 1:
                     sN_init = np.array([1.])
 
-                sN_all[0, e] = sN_init[0]
+                sN_all [0, e] = sN_init[0]
 
             for e in range(flash_init):
-                stroke_sum = np.sum(sN_all[0, 0:e + 1])
+                stroke_sum = np.sum(sN_all [0, 0:e + 1])
                 if stroke_sum > fixn:
                     break
 
         flash = e + 1
-        sN_all = sN_all[0, 0:e + 1]
+        sN_all = sN_all [0, 0:e + 1]    
         flash_number = np.repeat(np.arange(1, sN_all.size + 1), sN_all)  # flash_number = flash_number.reshape(-1,1).T
         stroke_number = np.concatenate([np.arange(1, s + 1) for s in sN_all])
         # 为第二步画最小的长方形做准备-随机形成uniform分布的点
@@ -122,10 +125,27 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
         plt.plot(XY_need3[:, 0], XY_need3[:, 1], 'k-', linewidth=2)
         plt.plot(XY_need3[:, 0], XY_need3[:, 1], 'r*')
         plt.axis('equal')
-        pn = fixn * 100  # 点的数量
+        #pn = fixn * 100  # 点的数量
+        #xp = xmin + (xmax - xmin) * np.random.rand(pn, 1)  # 生成x坐标
+        #yp = ymin + (ymax - ymin) * np.random.rand(pn, 1)  # 生成y坐标
 
-        xp = xmin + (xmax - xmin) * np.random.rand(pn, 1)  # 生成x坐标
-        yp = ymin + (ymax - ymin) * np.random.rand(pn, 1)  # 生成y坐标
+        pn2 = MC_lgtn['pn2'] # 密度=点数/每km^2
+        num_points=int(pn2/ 1000000  * polygonArea) #polygonArea单位是m^2
+        polygon_coordinates=[(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)]
+        polygon = Polygon(polygon_coordinates)  # 创建多边形对象
+        points = []
+        # 随机生成点直到它们落在多边形内
+        while len(points) < num_points:
+            # 随机生成点的坐标
+            x = random.uniform(polygon.bounds[0], polygon.bounds[2])  # 在多边形的x轴范围内生成
+            y = random.uniform(polygon.bounds[1], polygon.bounds[3])  # 在多边形的y轴范围内生成
+            point = Point(x, y)
+            # 判断生成的点是否在多边形内
+            if polygon.contains(point):
+                points.append((x, y))
+        points=np.array(points)
+        xp=points[:, 0]
+        yp=points[:, 1]
 
         # 判断随机点是否在包围线内
         # 包围线的顶点(当多边形是封闭的，一定首尾相接)-XY_need3
@@ -168,7 +188,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
                     yp = np.delete(yp, np.arange(ei, (feinext - fei + ei + 1))).reshape(-1, 1)
                     ei = ei
         points_need = np.array(points_need).reshape(-1, 2)
-    else:  # 特定情况(N固定是1)
+    else: # 特定情况(N固定是1)
         # 范围是[x轴最中间pointmd距离的两个点-最大距离，Y轴正半轴]-随机形成uniform分布的点
         points_need = []  # 要求范围内的点
         xmin = mid_points[0, 0]  # 左下角x坐标
@@ -193,7 +213,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
         y_range = np.linspace(ymin, ymax, num_zones+1)  # 将y轴分区间
         x_points = []
         y_points = []
-        # 对于每个区间，生成相应数量的点
+        # 对于每个区间，生成均匀分布的相应数量的点
         for i in range(len(y_range) - 1):
             y = y_range[i]  # 当前区间的下限
             y_next = y_range[i + 1]  # 当前区间的上限
@@ -207,7 +227,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
 
         points_need = np.column_stack((x_points, y_points))
 
-        fixn = len(points_need)
+        fixn=len(points_need)
         if mode == 1:
             flash = fixn
             sN_all = np.zeros((1, flash), dtype=int)
@@ -227,10 +247,10 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
                     sN_init = np.array([1.])
 
                 sN_init = np.array([1.])  # number of stroke固定是1
-                sN_all[0, e] = sN_init[0]
+                sN_all [0, e] = sN_init[0]
 
             for e in range(flash_init):
-                stroke_sum = np.sum(sN_all[0, 0:e + 1])
+                stroke_sum = np.sum(sN_all [0, 0:e + 1])
                 if stroke_sum > fixn:
                     break
 
@@ -247,7 +267,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
     # 第3张图-杆塔图+包围线+在包围线内的点-points_need
     plt.figure(3)
     plt.scatter(points_need[:, 0], points_need[:, 1], s=1, color='r', marker='o')
-    # plt.show()
+    plt.show()
 
     # the Monte Carlo
     # Number of samples
@@ -307,16 +327,16 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
             # Ip的范围 , tf的范围, Sm的范围 and th的范围
             # 不同情况对应的参数
             # 一般情况
-            if casemodel == 1:
+            if casemodel == 1 :
                 valid_Ip = (Ip1stmin <= Ip[i] <= Ip1stmax)  # 判断Ip范围
                 valid_tf = (tf1stmin < tf[i] <= tf1stmax)  # 判断tf范围
                 valid_Sm = (Sm1stmin < Sm[i] <= Sm1stmax)  # 判断Sm范围
                 valid_th = (th1stmin < th[i] <= th1stmax)  # 判断th范围
-            else:  # 特定情况
-                valid_Ip = (min(Ip1stmin, Ipmin) <= Ip[i] <= max(Ip1stmax, Ipmax))  # 判断Ip范围
-                valid_tf = (min(tf1stmin, tfmin) < tf[i] <= max(tf1stmax, tfmax))  # 判断tf范围
-                valid_Sm = (min(Sm1stmin, Smmin) < Sm[i] <= max(Sm1stmax, Smmax))  # 判断Sm范围
-                valid_th = (min(th1stmin, thmin) < th[i] <= max(th1stmax, thmax))  # 判断th范围
+            else: # 特定情况
+                valid_Ip = (min(Ip1stmin,Ipmin) <= Ip[i] <= max(Ip1stmax,Ipmax))  # 判断Ip范围
+                valid_tf = (min(tf1stmin,tfmin) < tf[i] <= max(tf1stmax,tfmax))  # 判断tf范围
+                valid_Sm = (min(Sm1stmin,Smmin) < Sm[i] <= max(Sm1stmax,Smmax))  # 判断Sm范围
+                valid_th = (min(th1stmin,thmin) < th[i] <= max(th1stmax,thmax))  # 判断th范围
 
             i += valid_Ip * valid_tf * valid_Sm * valid_th
             # a given quadruple of values for Ip tf Sm th
@@ -364,7 +384,7 @@ def lighting_parameters_distribution(MC_lgtn, DSave, Line, resultedge, foldname)
             # Ip的范围 , tf的范围, Sm的范围 and th的范围
             # 不同情况对应的参数
             # 一般情况
-            if casemodel == 1:
+            if casemodel == 1 :
                 valid_Ip = (Ipmin <= Ip[i] <= Ipmax)  # 判断Ip范围
                 valid_tf = (tfmin < tf[i] <= tfmax)  # 判断tf范围
                 valid_Sm = (Smmin < Sm[i] <= Smmax)  # 判断Sm范围

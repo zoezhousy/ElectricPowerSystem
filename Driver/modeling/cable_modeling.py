@@ -4,7 +4,8 @@ import scipy as sp
 
 from Function.Calculators.Impedance import calculate_coreWires_impedance, calculate_sheath_impedance, \
     calculate_multual_impedance, calculate_ground_impedance, calculate_sheath_internal_impedance, \
-    calculate_inductance_of_round_wires_inside_sheath, calculate_round_wires_internal_impedance
+    calculate_inductance_of_round_wires_inside_sheath, calculate_round_wires_internal_impedance, \
+    calculate_sheath_internal_impedance_multi_core, calculate_sheath_internal_impedance_multi_core_inf_sheath
 from Function.Calculators.Capacitance import calculate_coreWires_capacitance, calculate_sheath_capacitance
 from Function.Calculators.Inductance import calculate_coreWires_inductance, calculate_sheath_inductance
 from Model.Contant import Constant
@@ -188,7 +189,11 @@ def build_core_sheath_merged_impedance_matrix(tubeWire, frequency, constants):
 
     Lcs = calculate_inductance_of_round_wires_inside_sheath(core_wires_r, tubeWire.get_coreWires_innerOffset(), tubeWire.get_coreWires_innerAngle(), sheath_inner_radius, constants)
 
-    Zsi = calculate_sheath_internal_impedance(tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.sheath.epr, sheath_inner_radius, tubeWire.sheath.r, frequency, constants)
+    # Zsi = calculate_sheath_internal_impedance(tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.sheath.epr, sheath_inner_radius, tubeWire.sheath.r, frequency, constants)
+    Zsi = calculate_sheath_internal_impedance_multi_core(core_wires_r,tubeWire.get_coreWires_innerAngle(), tubeWire.get_coreWires_innerOffset(),tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.sheath.epr,
+                                              sheath_inner_radius, tubeWire.sheath.r, frequency, constants)
+    # Zsi = calculate_sheath_internal_impedance_multi_core_inf_sheath(core_wires_r,tubeWire.get_coreWires_innerAngle(), tubeWire.get_coreWires_innerOffset(),tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.sheath.epr,
+    #                                           sheath_inner_radius, tubeWire.sheath.r, frequency, constants)
 
     Nc = core_wires_r.shape[0]
     Zc = np.zeros((Nc, Nc, Nf), dtype='complex')

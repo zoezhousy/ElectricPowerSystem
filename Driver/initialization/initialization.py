@@ -404,6 +404,7 @@ def initial_device(device_data, dt, T, measurement):
 
     for device in device_data:
         lumps, measurement = initial_lump(device['Lump'], dt, T, measurement)
+        lumps.name = device['name']
         if device['type'] == 'insulator':
             devices.add_insolator(lumps)
         elif device['type'] == 'arrestor':

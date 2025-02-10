@@ -893,7 +893,7 @@ class Lumps:
                  voltage_controled_switchs=None, time_controled_switchs=None, a2gs=None, RODs=None,
                  switch_disruptive_effect_models=None,
                  current_sources_cosine=None, current_sources_empirical=None, voltage_sources_cosine=None,
-                 voltage_sources_empirical=None, MTCKs=None
+                 voltage_sources_empirical=None, MTCKs=None,*name
                  ):
         """
         初始化Lumps对象

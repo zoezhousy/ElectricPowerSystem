@@ -34,12 +34,14 @@ if __name__ == '__main__':
     #file_name = "01_8_ye"
     # file_name = "case2_linear/Assessment_simple"
     #file_name = "case3_nonlinear/nonlinear_simple3"
-    #file_name = "case3_nonlinear/nonlinear_ye"
+
     #file_name = "case3_nonlinear/nonlinear_ye"
     #file_name = "case2_linear/Assessment_18_1213_Yeung"
     #file_name = "case2_linear/Assessment_18_1213_Yeung(withRL)"
-    path = "Data/input/case4_linear/"
-    file_name = "inducedvoltagetest_threephase_withSW"
+    #path = "Data/input/case4_linear/"
+    path = "Data/input/case3_nonlinear/"
+    file_name = "nonlinear_ye"
+    #file_name = "inducedvoltagetest_threephase_withSW"
     json_file_path = path + file_name + ".json"
     # 0. read json file
     with open(json_file_path, 'r', encoding="utf-8") as j:
@@ -61,8 +63,12 @@ if __name__ == '__main__':
         show_result(df_measure)
     # 灵敏度分析模块
     elif calculation == 1:
-        result_before = network.run_base(load_dict)
+        network.Distance = 600
+        result_before = network.run_MC(load_dict)
+        print(network.broken)
         result_after = network.sensitive_analysis(load_dict)
+        pd.DataFrame(result_after).to_csv(path+"DE_modified.csv", index=False, header=True)
+        print(network.broken)
     elif calculation == 2:
         distance = network.Pre_run_MC(load_dict)
         network = Network()

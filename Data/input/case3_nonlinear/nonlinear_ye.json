@@ -359,7 +359,7 @@
           "pointer": null,
           "comments": null
         }
-      ],
+      ],F
       "Device": [
         {
           "name": "insolator_Tower_1",
@@ -1632,7 +1632,6 @@
               "comments": null
             }
           ]
-
         }
       ]
     },
@@ -15353,17 +15352,17 @@
   ],
   "Source":
     {
-          "Lightning": {
-      "type": "Indirect",
+      "Lightning": {
+      "type": "Direct",
         "area": "tower_1",
-        "wire": "Y01",
+        "wire": "Y01_Tower_1",
         "cir_id": null,
         "phase_id": null,
         "position": [
-          100,
-          100,
-          0
-         ],
+            0,
+            -0.4,
+            10
+          ],
         "model": "MTLE",
         "stroke_num": 1,
         "Stroke": [
@@ -15380,7 +15379,7 @@
 
   "Global": {
     "delta_time": 1e-08,
-    "time": 2e-5,
+    "time": 1e-4,
     "constant_frequency": 2e4,
     "max_length": 20,
     "global_ground": 1,
@@ -15393,16 +15392,16 @@
       "ionisation_model": ""
     },
     "GPU_calculation": 1,
-    "Calculation_Model": 2,
+    "Calculation_Model": 1,
     "Hybrid_method": 1
   },
   "Sensitivity_analysis":{
     "Stroke": {
-      "position": [10,-0.4,10],
-      "area": "OHL_1",
+      "position": null,
+      "area": null,
       "wire": null,
-      "cir_id": 3001,
-      "phase": "A",
+      "cir_id": null,
+      "phase": null,
       "waveform": [],
       "paramenters": []
     },
@@ -15421,7 +15420,7 @@
       "l": null
 
     },
-    "DE": null,
+    "DE": 1750000,
     "ground": null
 
   },
@@ -15433,8 +15432,9 @@
       "Dyp":100,
       "pointmd":200,
       "pn": 10000,
+      "pn2": 1000,
       "mode": 2,
-      "fixn": 10000,
+      "fixn": 1000,
       "Ip1stmin": 5,
       "Ip1stmax": 100,
       "tf1stmin": 0.5,
@@ -15482,7 +15482,7 @@
       "userInput4d": 1,
       "userInput4ind": 1
     },
-    "Record_SAF": 0
+    "Record_SAF": 1
 
   }
 

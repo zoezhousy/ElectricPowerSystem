@@ -250,6 +250,9 @@ class Linear(Strategy):
                                         index=H["capacitance_matrix"].columns.tolist() + H["inductance_matrix"].columns.tolist())
         return solution
 
+
+
+
 class MC_Linear(Strategy):
     def apply(self,Nt,dt,H,sources,RL_node):
         print("linear calculation is used")
@@ -833,6 +836,9 @@ class hybrid_variant_frequency(Hybrid_Strategy):
         return results, {}
 
 
+
+
+
 class hybrid_nonlinear(Hybrid_Strategy):
     def __init__(self):
         super().__init__()
@@ -1179,8 +1185,8 @@ class Measurement(Strategy):
             elif data_type == 1:
                 lump_name = key
                 # 处理支路名可能是列表的情况
-                branches = value[3]
-                dict_result = {}
+                branches = value[2]
+                #dict_result = {}
                 for bran, n1, n2 in zip(value[2], value[3], value[4]):
                     current = solution.loc[bran].tolist() if bran in solution.index else None
                     node1 = solution.loc[n1].tolist() if n1 in solution.index else None
@@ -1194,18 +1200,18 @@ class Measurement(Strategy):
                     E = sum([i * dt for i in p]) if p else None
 
                     if measurement_type == 1:
-                        dict_result[(lump_name,bran, n1, n2,"current")] = current
+                        results[(lump_name,bran, n1, n2,"current")] = current
                     elif measurement_type == 2:
-                        dict_result[(lump_name,bran, n1, n2,"voltage")] = voltage
+                        results[(lump_name,bran, n1, n2,"voltage")] = voltage
                     elif measurement_type == 3:
-                        dict_result[(lump_name,bran, n1, n2,"P")] = p
+                        results[(lump_name,bran, n1, n2,"P")] = p
                     elif measurement_type == 4:
-                        dict_result[(lump_name,bran, n1, n2,"current")] = current
-                        dict_result[(lump_name,bran, n1, n2,"voltage")] = voltage
-                        dict_result[(lump_name,bran, n1, n2,"P")] = p
-                        dict_result[(lump_name,bran, n1, n2,"E")] = E
+                        results[(lump_name,bran, n1, n2,"current")] = current
+                        results[(lump_name,bran, n1, n2,"voltage")] = voltage
+                        results[(lump_name,bran, n1, n2,"P")] = p
+                        results[(lump_name,bran, n1, n2,"E")] = E
                     elif measurement_type == 11:
-                        dict_result[(lump_name,bran, n1, n2,"E")] = E
+                        results[(lump_name,bran, n1, n2,"E")] = E
                 # dict_result["index"] = [bran, n1, n2]
                 # results[lump_name] = dict_result
         return results

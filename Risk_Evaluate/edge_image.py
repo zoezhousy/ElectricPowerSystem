@@ -10,6 +10,7 @@ def edge_image(Line, DSave, LatDis_max, foldname):
     # struct获取每个变量名
     Coordinates = Line['Node']
     Edges = Line['Edges'].astype(int)
+    node_type= Line['node_type']
     shift_vec = LatDis_max
     userInput1 = DSave['userInput1']
 
@@ -34,18 +35,20 @@ def edge_image(Line, DSave, LatDis_max, foldname):
 
     for i in range(single_point_coordinates.shape[0]):
         point_to_move = single_point_coordinates[i, :]
-        idx_move = idx1[i]
-        # 查找点point_to_move在Coordinates中的行数_idx1
-        # 查找点p在Edges中的行数
-        idx = np.where((Edges[:, 0] == idx_move) | (Edges[:, 1] == idx_move))[0]
-        if Edges[idx, 0] == idx_move:
-            e = Edges[idx, 1]
-        else:
-            e = Edges[idx, 0]
-
-        direction = Coordinates[e, :] - point_to_move
-        unit_vector = direction / np.linalg.norm(direction)
-        p_new[i, :] = point_to_move - shift_vec * unit_vector
+        if node_type[idx1[i]]==1: # 包围线距离=d(shift_vec)
+            idx_move = idx1[i]
+            # 查找点point_to_move在Coordinates中的行数_idx1
+            # 查找点p在Edges中的行数
+            idx = np.where((Edges[:, 0] == idx_move) | (Edges[:, 1] == idx_move))[0]
+            if Edges[idx, 0] == idx_move:
+                e = Edges[idx, 1]
+            else:
+                e = Edges[idx, 0]
+            direction = Coordinates[e, :] - point_to_move
+            unit_vector = direction / np.linalg.norm(direction)
+            p_new[i, :] = point_to_move - shift_vec * unit_vector
+        else: #包围线距离=0,包围线直接过端点
+            p_new[i, :] = point_to_move- np.array([[0,0]])
 
     # 把只连接了一个点的点替换为移动了1个单位长度的新点-p_new
     Coordinates_new = np.copy(Coordinates)
@@ -348,9 +351,9 @@ def edge_image(Line, DSave, LatDis_max, foldname):
     edge_line0 = edge_line2.copy()
     for i in range(edge_line2.shape[0]):
         if np.all(edge_line2[i, :2] == edge_line2[i, 2:]):
-            edge_line0[i, :] = [0, 0, 0, 0]
+            edge_line0[i, :] = [np.nan, np.nan, np.nan, np.nan]
 
-    edge_line2 = edge_line0[edge_line0[:, 0] != 0]
+    edge_line2 = edge_line0[edge_line0[:, 0] != np.nan]
     # 随着包围线距离的不同，XY_need 可能会错误判定某一个点
     # 如果有错误，则会产生 XY_need_spe
     if 'XY_need_spe' in locals():
@@ -812,7 +815,7 @@ def edge_image(Line, DSave, LatDis_max, foldname):
 
                 # 配对的孤立点在同一直线上时，直接连接这两个孤立点
             else:
-                edge_line2 = np.vstack([edge_line2, [rays[ip, 0], rays[ip, 1], rays[ot, 0], rays[ot, 1]]])
+                edge_line2 = np.vstack([edge_line2, [rays[ip, 0], rays[ip, 1], rays[ot[0], 0], rays[ot[0], 1]]])
 
     # 删除重复的点和线段(同样的延长线产生的交点会因保留的位数而不完全相等，统一保留至小数点后4位)
     XY_need = np.unique(np.round(XY_need, 4), axis=0)
