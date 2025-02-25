@@ -954,6 +954,7 @@ class Network:
 
 
             MC_list = self.MC_generate_flash(load_dict)
+            MC_list = [MC for MC in MC_list if MC[0].type=="Direct"]
             Arrestor_name = [device.name for tower in self.towers for device in  tower.devices.arrestors]
 
             stroke_node = list(set(self.OHL_node) | set(self.tower_head_node.values()))
@@ -1313,8 +1314,8 @@ class Network:
                                 elif w['type'] == 'CIRO':
                                     wire = 'Y' + str(cir_id) + w['phase']
 
-            if flash_type=="Indirect":
-                continue
+            # if flash_type=="Indirect":
+            #     continue
             lightning = Lightning(id=1, type=flash_type, strokes=stroke_list, channel=Channel(position_xy))
             MC_result.append((lightning, area, wire, position_xy))
         return MC_result
