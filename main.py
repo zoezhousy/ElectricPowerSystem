@@ -52,7 +52,7 @@ def run_sensitivity_analysis(network, load_dict, save_path):
     :param load_dict: 加载的JSON数据
     :param save_path: 结果保存路径
     """
-    network.Distance = 600
+    network.Distance = 100
     # result_before = network.run_MC(load_dict)
     network.sensitive_MC(load_dict)
     print(network.broken)

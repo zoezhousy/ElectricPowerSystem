@@ -971,7 +971,7 @@ class Network:
                 # MC[0].strokes[0].t_us = np.array(list(range(self.Nt))) * self.dt
                 # MC[0].strokes[0].calculate()
                 closet_node = self.closest_node(MC[1],MC[2],MC[3])
-                if closet_node.name not in all_stroke_node:
+                if closet_node not in all_stroke_node:
                     all_stroke_node[closet_node] = 0
                     # 累计统计
                 all_stroke_node[closet_node] += 1
@@ -981,7 +981,7 @@ class Network:
             result["Probability"] = result["Strike Count"] / len(MC_list)
 
             print("雷击统计结果：")
-            print(result)  # 按节点名排序
+            print(result)
 
 
             # 生成所有列名的组合
@@ -1036,6 +1036,7 @@ class Network:
                                       axis=1, ignore_index=True)
                 sources = self.add_lump(U_out, I_out)
                 ins, saf = process_calculate(sources, self, index, calculate_saf=1)
+                index +=1
                 #closet_name = closet_node.name+"_"+str(selected_amplitudes)+"_"+str(selected_parameter.replace('/', '_'))
                 for tower_name in self.FO_Tower:
                     FO_matrix.loc[tower_name, col] = 1
