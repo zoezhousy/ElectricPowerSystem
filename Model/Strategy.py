@@ -11,6 +11,7 @@ from scipy.linalg import block_diag
 from tqdm import tqdm
 # import cupy as cp
 from Utils.GPU import transfer_date_to_gpu, transfer_data_to_cpu
+import time
 
 from Model import Network
 
@@ -836,16 +837,13 @@ class hybrid_variant_frequency(Hybrid_Strategy):
         return results, {}
 
 
-
-
-
 class hybrid_nonlinear(Hybrid_Strategy):
     def __init__(self):
         super().__init__()
 
     def apply(self, line_matrix, tower_matrix, sources, Nt, dt, GPU):
         print("Nonlinear hybrid calculation is used")
-        GPU = 0
+
         #OHL parameter preparing
         im_o_df = line_matrix['incidence_matrix']
         im_o = im_o_df.to_numpy()
@@ -866,6 +864,7 @@ class hybrid_nonlinear(Hybrid_Strategy):
             import cupy as cp
             print("GPU calculation is used")
             L_o, R_o, C_o, G_o, vs_o, is_o, im_o = transfer_date_to_gpu(L_o, R_o, C_o, G_o, vs_o, is_o, im_o)
+
             inv = cp.linalg.inv
             zeros = cp.zeros
             hstack = cp.hstack
@@ -891,6 +890,8 @@ class hybrid_nonlinear(Hybrid_Strategy):
         CdeG = C_o / dt - G_o / 2
         damaged_SDEM = []
         damaged_NLR = []
+        if Nt>sources.shape[1]:
+            Nt = sources.shape[1]
         for i in tqdm(range(Nt - 1)):
             # tower solution
             for itcal in T_cal:
@@ -1118,7 +1119,7 @@ class hybrid_nonliear_variant_frequency(Hybrid_Strategy):
 
                 for i_nlr in range(len(itcal['NLR_index'])):
                     index_r = itcal['NLR_index'][i_nlr, 0]
-                    itcal['R'][index_r, index_r] = itcal['NLR_para'][i_nlr](Ibran_t_n[index_r])
+                    itcal['R'][index_r, index_r] = itcal['NLR_para'][i_nlr](max(abs(Ibran_t_n[index_r]), 1e-2))
                 # 判断损坏代码
                 # v_diff = abs(Vnode_t_ref[itcal['NLR_index'][:, 1]] - Vnode_t_ref[itcal['NLR_index'][:, 2]])
                 # itcal['NLR_E'] += Ibran_t_n[itcal['NLR_index'][:, 0]] * v_diff * dt

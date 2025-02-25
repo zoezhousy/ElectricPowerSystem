@@ -21,9 +21,9 @@ from Driver.modeling.OHL_modeling import OHL_building, OHL_building_variant_freq
 from Driver.modeling.cable_modeling import cable_building, cable_building_variant_frequency, cable_building_hybrid_variant_frequency
 from Driver.modeling.tower_modeling import tower_building, tower_building_variant_frequency, tower_building_with_tube, \
     tower_building_variant_frequency_with_tube
-from Function.Calculators.InducedVoltage_calculate import InducedVoltage_calculate, LightningCurrent_calculate, \
+from Function.Calculators.InducedVoltage_calculate import InducedVoltage_calculate, \
     H_MagneticField_calculate, ElectricField_calculate, ElectricField_above_lossy, InducedVoltage_calculate_indirect, \
-    InducedVoltage_calculate_direct
+    InducedVoltage_calculate_direct, LightningCurrent_calculate_direct, LightningCurrent_calculate_indirect
 # from Risk_Evaluate.MC import run_MC
 from Model.Cable import Cable
 from Model.Lightning import Lightning
@@ -39,8 +39,9 @@ from Risk_Evaluate.Huri_Method import Huri_Method
 from Risk_Evaluate.Huri_Method_SAF import Huri_Method_SAF
 from tqdm import tqdm
 import cupy as cp
-from tqdm import tqdm
-
+from Utils.Matrix import block_diag_3dim
+from collections import Counter
+import random
 
 class Network:
     def __init__(self, **kwargs):
@@ -90,12 +91,14 @@ class Network:
         self.VF_dict = {}
         self.PoleXY = {}
         self.tower_head_node = {}
+        self.OHL_node = []
         self.sig=None
         self.epr = None
         self.RL_node = []
         self.FO = {}
         self.broken = {}
         self.arrestor_bran2Tower = {}
+        self.FO_Tower = []
         self.Distance = 0
         self.MC_flash = []
         self.weak_point = {}
@@ -140,6 +143,7 @@ class Network:
                 OHL_nodes.append(wire.start_node.name)
                 OHL_nodes.append(wire.end_node.name)
                 branches[wire.name] = [position_obj_start, position_obj_end, obj.info.name, Nt]
+        self.OHL_node = list(set(OHL_nodes))
         return branches, set(OHL_nodes)
 
     def cable_branches(self, branches, maxlength):
@@ -177,6 +181,9 @@ class Network:
     def tower_building(self):
         self.arrestor_bran2Tower = {bran: [tower.name, device.name] for tower in self.towers for device in tower.devices.arrestors for bran in
                                     device.branList}
+        # self.broken = {device.name:0 for tower in self.towers for device in
+        #                             tower.devices.arrestors}
+        # self.FO_Tower = {tower.name: 0 for tower in self.towers}
         for tower in self.towers:
             gnd = self.ground if self.global_ground == 1 else tower.ground
             self.PoleXY[tower.info.name] = tower.info.position[:2]
@@ -292,6 +299,65 @@ class Network:
             sources = pd.concat([U_out, I_out], axis=0)
             return sources
 
+    #计算直击雷
+    def source_Direct(self, lightning, area, wire, position, nodes, branches, constants, shared_dict):
+        start = [list(l[0].values())[0] for l in list(branches.values())]
+        end = [list(l[1].values())[0] for l in list(branches.values())]
+        branches = list(branches.keys())  # 让branches只存储支路的列表，可节省内存
+        pt_start = np.array(start)
+        pt_end = np.array(end)
+
+        U_out = pd.DataFrame()
+        I_out = pd.DataFrame()
+        closet_node = self.closest_node(area, wire, position)
+        for i in range(len(lightning.strokes)):
+            new_U = InducedVoltage_calculate_direct(branches, lightning, i)
+            U_out = pd.concat([U_out, new_U], axis=1, ignore_index=True)
+            I_out = pd.concat([I_out,
+                               LightningCurrent_calculate_direct(closet_node,nodes, lightning,
+                                                          stroke_sequence=i)],
+                              axis=1, ignore_index=True)
+        return U_out, I_out, shared_dict
+    def source_Indirect(self, lightning, nodes, branches, constants, shared_dict):
+        start = [list(l[0].values())[0] for l in list(branches.values())]
+        end = [list(l[1].values())[0] for l in list(branches.values())]
+        branches = list(branches.keys())  # 让branches只存储支路的列表，可节省内存
+        pt_start = np.array(start)
+        pt_end = np.array(end)
+
+        U_out = pd.DataFrame()
+        I_out = pd.DataFrame()
+        for i in range(len(lightning.strokes)):
+
+            Er_lossy = 0
+            Ez_lossy = 0
+            epr = self.epr
+            sig = self.sig
+            GPU = self.GPU_calculation
+            # if (erg, sigma_g, 0) in shared_dict:
+            Ez_T, Er_T = ElectricField_calculate(pt_start, pt_end, lightning.strokes[i],
+                                                 lightning.channel,
+                                                 constants.ep0, constants.vc, GPU)  # 计算电场
+            if self.gnd_mode == 0:
+                Er_lossy = Er_T
+                Ez_lossy = Ez_T
+                print("------------existing ---------------")
+            else:
+                H_p = H_MagneticField_calculate(pt_start, pt_end, lightning.strokes[i],
+                                                lightning.channel,
+                                                constants.ep0, constants.vc, GPU)  # 计算磁场
+
+                # 计算有损地面的电场
+                Er_lossy = ElectricField_above_lossy(-H_p, Er_T, constants, shared_dict, self.dt, epr, sig, sigma0=None)
+                Ez_lossy = Ez_T
+            new_U = InducedVoltage_calculate_indirect(pt_start, pt_end, branches, lightning,
+                                                      stroke_sequence=i, Er_lossy=Er_lossy, Ez_lossy=Ez_lossy)
+            U_out = pd.concat([U_out, new_U], axis=1, ignore_index=True)
+            I_out = pd.concat(
+                [I_out,
+                 LightningCurrent_calculate_indirect(nodes, lightning, stroke_sequence=i)],
+                axis=1, ignore_index=True)
+        return U_out, I_out, shared_dict
 
     # 输出U/I
     def source_calculate(self, lightning, area, wire, position, nodes, branches,constants, shared_dict):
@@ -336,14 +402,16 @@ class Network:
                      LightningCurrent_calculate(area, wire, position, self, nodes, lightning, stroke_sequence=i)],
                     axis=1, ignore_index=True)
         if lightning.type == "Direct":
+            closet_node = self.closest_node(area, wire, position)
             for i in range(len(lightning.strokes)):
                 new_U = InducedVoltage_calculate_direct(branches, lightning, i)
                 U_out = pd.concat([U_out, new_U], axis=1, ignore_index=True)
                 I_out = pd.concat([I_out,
-                     LightningCurrent_calculate(area, wire, position, self, nodes, lightning, stroke_sequence=i)],
+                     LightningCurrent_calculate_direct(closet_node, nodes, lightning, stroke_sequence=i)],
                     axis=1, ignore_index=True)
         # Source_Matrix = pd.concat([I_out, U_out], axis=0)
         return U_out, I_out, shared_dict
+
     def add_source(self, U_out, I_out):
         for model_list in [self.towers, self.OHLs, self.cables]:
             for model in model_list:
@@ -493,8 +561,8 @@ class Network:
         for SDEM in lumps.switch_disruptive_effect_models:
             temp = []
             temp.append(SDEM.bran[0])
-            temp.append(SDEM.node1[0]) if SDEM.node1[0] != 'ref' else -1
-            temp.append(SDEM.node2[0]) if SDEM.node2[0] != 'ref' else -1
+            temp.append(SDEM.node1[0]) if SDEM.node1[0] != 'ref' else temp.append(-1)
+            temp.append(SDEM.node2[0]) if SDEM.node2[0] != 'ref' else temp.append(-1)
             temp.append(SDEM.parameters['v_initial'])
             temp.append(0)
             temp.append(SDEM.parameters['DE_max'])
@@ -505,8 +573,8 @@ class Network:
         for VCS in lumps.voltage_controled_switchs:
             temp = []
             temp.append(VCS.bran[0])
-            temp.append(VCS.node1[0]) if VCS.node1[0] != 'ref' else -1
-            temp.append(VCS.node2[0]) if VCS.node2[0] != 'ref' else -1
+            temp.append(VCS.node1[0]) if VCS.node1[0] != 'ref' else temp.append(-1)
+            temp.append(VCS.node2[0]) if VCS.node2[0] != 'ref' else temp.append(-1)
             temp.append(VCS.parameters['voltage'])
             temp = np.array(temp)
             VCS_update_matrix = np.vstack((VCS_update_matrix, temp))
@@ -517,8 +585,8 @@ class Network:
             temp.append(TCS.bran[0])
             temp.append(min(TCS.parameters['close_time'], TCS.parameters['open_time']))
             temp.append(max(TCS.parameters['close_time'], TCS.parameters['open_time']))
-            temp.append(TCS.parameters['resistance']) if TCS.parameters['type_of_data'] != 1 else 1e-6
-            temp.append(TCS.parameters['resistance']) if TCS.parameters['type_of_data'] == 1 else 1e-6
+            temp.append(TCS.parameters['resistance']) if TCS.parameters['type_of_data'] != 1 else temp.append(1e-6)
+            temp.append(TCS.parameters['resistance']) if TCS.parameters['type_of_data'] == 1 else temp.append(1e-6)
             temp = np.array(temp)
             TCS_update_matrix = np.vstack((TCS_update_matrix, temp))
 
@@ -526,9 +594,9 @@ class Network:
         for NLR in lumps.nolinear_resistors:
             temp = []
             temp.append(NLR.bran[0])
-            temp.append(NLR.node1[0]) if NLR.node1[0] != 'ref' else -1
-            temp.append(NLR.node2[0]) if NLR.node2[0] != 'ref' else -1
-            temp.append(NLR.parameters['ri_characteristic']) if NLR.default == 1 else lambda x: NLR.parameters['resistance']
+            temp.append(NLR.node1[0]) if NLR.node1[0] != 'ref' else temp.append(-1)
+            temp.append(NLR.node2[0]) if NLR.node2[0] != 'ref' else temp.append(-1)
+            temp.append(NLR.parameters['ri_characteristic']) if NLR.default == 1 else temp.append(lambda x: NLR.parameters['resistance'])
             temp = np.array(temp)
             NLR_update_matrix = np.vstack((NLR_update_matrix, temp))
         return {'SDEM': SDEM_update_matrix, 'VCS': VCS_update_matrix, 'TCS': TCS_update_matrix, 'NLR': NLR_update_matrix}
@@ -743,14 +811,14 @@ class Network:
         start_time = time.time()  # 记录开始时间
         constants = Constant()
         sources = self.source_initial(load_dict, nodes,branches,constants,share_dict)
-        end = time.time()  # 记录开始时间
-        print(f"Total running time: {end - start_time} seconds")  # 打印运行时长
+        end = time.time()  # 记录结束时间
+        print(f"Source simulation running time: {end - start_time} seconds")  # 打印运行时长
         solution = self.calculate(self.Nt, self.dt, self.H, sources)
         end2 = time.time()  # 记录开始时间
         pd.DataFrame(solution[0]).to_csv("Data/Output/combine_output.csv")
         measure_result = self.run_measure(solution)
 
-        print(f"Total running time: {end2 - end} seconds")  # 打印运行时长
+        print(f"Calculation running time: {end2 - end} seconds")  # 打印运行时长
         print(solution)
         return measure_result
 
@@ -827,6 +895,191 @@ class Network:
                                         load_dict["Sensitivity_analysis"]["ROD"]["l"])
 
         print("you are starting sensitive analysis")
+
+    def sensitive_MC(self,load_dict):
+        self.solution_type['hybrid'] = True
+        self.global_set(load_dict)
+        constants = Constant()
+        self.dt = self.max_length / constants.vc
+        self.Nt = int(np.ceil(self.T / self.dt))
+
+        self.initialize_network(load_dict, self.VF)
+
+        tower_matrix = self.tower_individual_matrix()  # 合并tower矩阵
+        line_matrix = self.line_individual_matrix() # 合并cable和OHL矩阵
+
+        # tower_branches, tower_nodes, tower_or_lump_nodes, tower_and_line_nodes = self.nodes_of_hybrid_mode()
+        tower_branches = {}
+        tower_branches, tower_nodes = self.tower_branches(tower_branches)
+        tower_nodes.discard('ref')
+
+        self.H = {"Line": line_matrix,"Tower": tower_matrix}
+
+        # 2. 保存支路节点信息
+        branches,nodes = self.calculate_branches(self.max_length)
+
+        #branches = segment_branch(branches)
+        #nodes =list(tower_nodes | set(line_matrix["capacitance_matrix"].columns.tolist()))
+
+
+
+        # 3. 生成多个雷电
+        dataset_ins = []
+        dataset_saf = []
+        FO_direct = []
+        FO_indirect = []
+        SAF_direct = []
+        SAF_indirect = []
+        dataset = []
+        shared_dict = {}
+        R = 100
+        constants = Constant()
+        constants.ep0 = 8.85e-12
+        index = 0
+        calculate_saf = 1
+        huri = 0
+
+        if load_dict["MC"]:
+            # MC_result = self.MC_generate_flash(load_dict)
+            # self.MC_flash = MC_result
+            # record_SAF = load_dict["MC"]["Record_SAF"]
+            # summary = self.MC_calculate(record_SAF,MC_result, nodes, branches)
+
+            # 定义幅值和对应的概率
+            amplitudes = [30, 60, 120]  # 单位：kA
+            probabilities = [0.5, 0.35, 0.15]
+
+            parameter = ['8/20us','1/50us']
+            probabilities2 = [0.5,0.5]
+
+
+            MC_list = self.MC_generate_flash(load_dict)
+            Arrestor_name = [device.name for tower in self.towers for device in  tower.devices.arrestors]
+
+            stroke_node = list(set(self.OHL_node) | set(self.tower_head_node.values()))
+
+
+            all_stroke_node = {}
+
+            for MC in MC_list:
+                # 根据波尾时间调整计算时间
+                # self.T = (MC[0].strokes[0].parameters[1] + MC[0].strokes[0].parameters[2] * 2) * 1e-6
+                # self.Nt = int(np.ceil(self.T / self.dt))
+                # MC[0].strokes[0].duration = (MC[0].strokes[0].parameters[1] + MC[0].strokes[0].parameters[2] * 2) * 1e-6
+                # MC[0].strokes[0].Nt = self.Nt
+                # MC[0].strokes[0].t_us = np.array(list(range(self.Nt))) * self.dt
+                # MC[0].strokes[0].calculate()
+                closet_node = self.closest_node(MC[1],MC[2],MC[3])
+                if closet_node.name not in all_stroke_node:
+                    all_stroke_node[closet_node] = 0
+                    # 累计统计
+                all_stroke_node[closet_node] += 1
+            # 转换为DataFrame显示结果
+            result = pd.DataFrame(list(all_stroke_node.items()),
+                                  columns=["Node", "Strike Count"])
+            result["Probability"] = result["Strike Count"] / len(MC_list)
+
+            print("雷击统计结果：")
+            print(result)  # 按节点名排序
+
+
+            # 生成所有列名的组合
+            column_names = [
+                f"{node.name}_{amp}_{param.replace('/', '_')}"  # 将斜杠替换为下划线，便于后续处理
+                for node in all_stroke_node.keys()
+                for amp in amplitudes
+                for param in parameter
+            ]
+            FO_matrix = pd.DataFrame(0,
+                                  index=[tower.name for tower in self.towers],
+                                  columns=column_names)
+            SAF_matrix = pd.DataFrame(0,
+                                     index=Arrestor_name,
+                                     columns=column_names)
+            # 创建name到对象的映射（因为字典的key是对象）
+            node_dict = {node.name: node for node in all_stroke_node.keys()}
+
+            #for closet_node in all_stroke_node:
+            for col in column_names:
+                node_name,selected_amplitudes, selected_parameter = col.split('_', 2)
+                selected_parameter = selected_parameter.replace('_', '/')
+                selected_amplitudes = int(selected_amplitudes)
+                closet_node = node_dict[node_name]
+                # 随机选择一个幅值
+                #selected_amplitudes = random.choices(amplitudes, weights=probabilities, k=1)[0]
+                #selected_parameter = random.choices(parameter, weights=probabilities2, k=1)[0]
+                # 提取数字
+                numbers = selected_parameter.split("/")[0], selected_parameter.split("/")[1].rstrip("us")
+                front_time, tail_time = int(numbers[0]), int(numbers[1])
+
+                # 计算
+                time = front_time*1e-6 + 2 * tail_time*1e-6
+                stroke1 = Stroke('Heidler', duration=time, dt=1.0e-8, is_calculated=True, parameter_set=selected_parameter)
+                stroke1.parameters[0] = selected_amplitudes*1000
+                self.T = (stroke1.parameters[1]) * 1e-6
+                self.Nt = int(np.ceil(self.T / self.dt))
+                stroke1.Nt = self.Nt
+                stroke1.t_us = np.array(list(range(self.Nt))) * self.dt
+                stroke1.calculate()
+                strokes = [stroke1]
+                channel = Channel(hit_pos=[50, 500, 0])
+                lightning = Lightning(id=1, type='Direct', strokes=strokes, channel=channel)
+                U_out = pd.DataFrame()
+                I_out = pd.DataFrame()
+                for i in range(len(lightning.strokes)):
+                    new_U = InducedVoltage_calculate_direct(branches, lightning, i)
+                    U_out = pd.concat([U_out, new_U], axis=1, ignore_index=True)
+                    I_out = pd.concat([I_out,
+                                       LightningCurrent_calculate_direct(closet_node, nodes, lightning,
+                                                                         stroke_sequence=i)],
+                                      axis=1, ignore_index=True)
+                sources = self.add_lump(U_out, I_out)
+                ins, saf = process_calculate(sources, self, index, calculate_saf=1)
+                #closet_name = closet_node.name+"_"+str(selected_amplitudes)+"_"+str(selected_parameter.replace('/', '_'))
+                for tower_name in self.FO_Tower:
+                    FO_matrix.loc[tower_name, col] = 1
+                for broke_arrestor in self.broken:
+                    SAF_matrix.loc[broke_arrestor, col] = 1
+            print(FO_matrix)
+
+
+    def closest_node(self,p1,p2,position):
+        area = p1.split("_")[0]
+        # 1. 找到用户指定点所在的wire
+        selected_wire = None
+        nodes = set()
+        if area == "tower":
+            selected_tower = [tower for tower in self.towers if tower.info.name == p1]
+            selected_wire = [wire for wire in list(selected_tower[0].wires.get_all_wires().values()) if
+                             wire.name.split("_")[0] == p2.split("_")[0]]
+
+        elif area == "OHL":
+            selected_ohl = [ohl for ohl in self.OHLs if ohl.name == p1]
+            selected_wire = [wire for wire in list(selected_ohl[0].wires.get_all_wires().values()) if
+                             wire.name.split("_")[0] == p2.split("_")[0]]
+            #all_node = [wire for wire in list(selected_ohl[0].wires.get_all_nodes())]
+            #nodes = set(all_node)
+        elif area == "cable":
+            selected_cable = [cable for cable in self.cables if cable.name == p1]
+            selected_wire = [wire for wire in list(selected_cable[0].wires.get_all_wires().values()) if
+                             wire.name.split("_")[0] == p2]
+        # 2. 找到用户指定点距离该wire上最近的node
+
+        for wire in selected_wire:
+            nodes.add(wire.start_node)
+            nodes.add(wire.end_node)
+
+        closest_point = None
+        min_distance = float('inf')
+
+        for node in nodes:
+            node_pos = [node.x, node.y, node.z]
+            dist = distance(node_pos, position)
+            if dist < min_distance:
+                min_distance = dist
+                closest_point = node
+        return closest_point
+
     def run_measure(self,solution):
         # lumpname/branname: label(bran0/lump1),probe,branname,n1,n2,(towername)
         if self.measurement:
@@ -1060,6 +1313,8 @@ class Network:
                                 elif w['type'] == 'CIRO':
                                     wire = 'Y' + str(cir_id) + w['phase']
 
+            if flash_type=="Indirect":
+                continue
             lightning = Lightning(id=1, type=flash_type, strokes=stroke_list, channel=Channel(position_xy))
             MC_result.append((lightning, area, wire, position_xy))
         return MC_result
@@ -1072,9 +1327,27 @@ class Network:
                    "SAF_indirect": 0, "SAF_direct": 0, "Huri_SAF": 0}
 
         start_time = time.time()
+        icurr = []
+        dataset_ins = []
+        dataset_saf = []
+        FO_direct = []
+        FO_indirect = []
+        SAF_direct = []
+        SAF_indirect = []
+        dataset = []
+
+        R = 100
+        constants = Constant()
+        constants.ep0 = 8.85e-12
+        index = 0
+        calculate_saf = 1
+        huri = 0
           # 创建一个共享字典
         if record_SAF==1:
-            FO_direct,FO_indirect,SAF_direct,SAF_indirect,huri  = self.Huri_method_SAF(MC_result, nodes, branches,shared_dict)
+            for MC in MC_result:
+                FO_direct,FO_indirect,SAF_direct,SAF_indirect,huri,index  = self.Huri_method_SAF(MC, nodes, branches,shared_dict,
+                                                                                       dataset_ins,dataset_saf,FO_direct,FO_indirect,
+                                                                                       SAF_direct,SAF_indirect,constants,index,huri)
             SAF_true_count_direct = len(list(filter(lambda x: x, SAF_direct)))
             SAF_false_count_direct = len(FO_direct) - SAF_true_count_direct
             SAF_true_count_indirect = len(list(filter(lambda x: x, SAF_indirect)))
@@ -1085,7 +1358,9 @@ class Network:
             summary["nonSAF_indirect"] = SAF_false_count_indirect
 
         else:
-            FO_direct,FO_indirect,huri = self.Huri_method_INS(MC_result, nodes, branches,shared_dict)
+            for MC in MC_result:
+                FO_direct,FO_indirect,huri,index  = self.Huri_method_INS(MC, nodes, branches,shared_dict,dataset,
+                                                                  FO_indirect,FO_direct,constants,index,huri)
         end_time = time.time()  # 记录结束时间
         duration = end_time - start_time  # 计算运行时长
         true_count_direct = len(list(filter(lambda x: x, FO_direct)))
@@ -1097,7 +1372,7 @@ class Network:
         summary["nonFO_direct"] = false_count_direct
         summary["nonFO_indirect"] = false_count_indirect
         summary["FOR_direct"] = 100*true_count_direct/len(FO_direct)*2 if len(FO_direct)*2>0 else 0
-        summary["FOR_indirect"] = 100 * true_count_indirect / len(FO_indirect) * 2
+        summary["FOR_indirect"] = 100 * true_count_indirect / len(FO_indirect) * 2 if len(FO_indirect) !=0 else 0
         summary["Huri"] = huri
         summary["RunTime"] = duration
         print("FO_direct: ", summary["FO_direct"])
@@ -1377,8 +1652,7 @@ class Network:
     def Huri_ins(self,MC, nodes, branches, constants, shared_dict,FO_direct,FO_indirect,dataset_ins, ins, saf,R):
         # 1. 直接雷
         if MC[0].type == "Direct":
-            U_out, I_out, shared_dict = self.source_calculate(MC[0], MC[1], MC[2], MC[3], nodes, branches,
-                                                              constants, shared_dict)
+            U_out, I_out, shared_dict = self.source_Direct(MC[0], MC[1], MC[2], MC[3], nodes, branches, constants, shared_dict)
             sources = self.add_lump(U_out, I_out)
             solution, ins, saf = self.SAF_calculate(self.Nt, self.dt, self.H, sources)
 
@@ -1498,89 +1772,42 @@ class Network:
             SAF_indirect.append(False)  # 不跳过不闪络
         return SAF_direct,SAF_indirect
 
-    def Huri_method_SAF(self,MC_result, nodes, branches,shared_dict):
-        icurr = []
-        dataset_ins = []
-        dataset_saf = []
-        FO_direct = []
-        FO_indirect = []
-        SAF_direct = []
-        SAF_indirect = []
-        # dataset = []
-        # FO_indirect = []
-        # FO_direct = []
+    def Huri_method_SAF(self,MC, nodes, branches,shared_dict,dataset_ins,dataset_saf,FO_direct,FO_indirect,SAF_direct,
+                        SAF_indirect,constants,index,huri):
         R = 100
-        constants = Constant()
-        constants.ep0 = 8.85e-12
-        index = 0
-        calculate_ins = 1
-        huri = 0
-        for MC in MC_result:
-            if MC[0].type == "Direct":
-                #solution,ins = process_calculate(MC, nodes, branches, self,index,shared_dict,calculate_ins)
-                ins,saf = process_calculate(MC, nodes, branches, self, index, shared_dict, calculate_ins)
-                index = index+1
-                #if ins["FO"]:
-                if saf:
-                    SAF_direct.append(ins)
-                else:
-                    SAF_direct.append(False)
-                if ins:
-                    FO_direct.append(ins)
-                else:
-                    FO_direct.append(False)
-                continue
-            flash_position = MC[0].channel.hit_pos[:2]
-            if len(dataset_saf) == 0:
-                #solution, ins = process_calculate(MC, nodes, branches, self, index, shared_dict,calculate_ins)
-                ins,saf = process_calculate(MC, nodes, branches, self, index, shared_dict, calculate_ins)
-                index = index + 1
-                #if ins["FO"]:
-                if saf:
-                    SAF_indirect.append(saf)
-                    continue
-                else:
-                    distances = []
-                    for coord in list(self.PoleXY.values()):
-                        distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
-                        distances.append((coord, distance))
-                    distances.sort(key=lambda item: item[1])
-                    closest_two = distances[:2]
-                    PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
-                        , closest_two[0][1], closest_two[1][1]]
-                    dataset_saf.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
-                    FO_indirect.append(False)
-                    continue
-            if len(dataset_saf)>0:
-                #for i,stroke in enumerate(MC[0].strokes):
-                stroke = MC[0].strokes[0]
-                icur = np.append(stroke.parameters,flash_position)
-                result = Huri_Method(R,dataset_ins,icur)
-                result_saf = Huri_Method(R, dataset_saf, icur)
-                if result ==1 and result_saf==1:
-                    SAF_indirect.append(False)
-                    FO_indirect.append(False)
-                    huri = huri+1
-                    distances = []
-                    for coord in list(self.PoleXY.values()):
-                        distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
-                        distances.append((coord, distance))
-                    distances.sort(key=lambda item: item[1])
-                    closest_two = distances[:2]
-                    PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
-                        , closest_two[0][1], closest_two[1][1]]
-                    dataset_ins.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
-                    dataset_saf.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
+        calculate_saf = 1
 
-                    print("using Huri skip calculation")
-                    continue
-            #solution, ins = process_item(MC, nodes, branches, self, index, shared_dict,calculate_ins)
-            ins,saf = process_calculate(MC, nodes, branches, self, index, shared_dict, calculate_ins)
-            index = index + 1
-           # if ins["FO"]:
+
+
+        if MC[0].type == "Direct":
+            U_out, I_out, shared_dict = self.source_Direct(MC[0], MC[1], MC[2], MC[3], nodes, branches,
+                                                                  constants, shared_dict)
+            sources = self.add_lump(U_out, I_out)
+            #solution,ins = process_calculate(MC, nodes, branches, self,index,shared_dict,calculate_ins)
+            ins,saf = process_calculate(sources, self, index, calculate_saf)
+            index = index+1
+            #if ins["FO"]:
+            if saf:
+                SAF_direct.append(ins)
+            else:
+                SAF_direct.append(False)
             if ins:
-                FO_indirect.append(saf)
+                FO_direct.append(ins)
+            else:
+                FO_direct.append(False)
+            return FO_direct, FO_indirect, SAF_direct, SAF_indirect, huri, index
+        flash_position = MC[0].channel.hit_pos[:2]
 
+        if len(dataset_saf) == 0:
+            U_out, I_out, shared_dict = self.source_Indirect(MC[0], nodes, branches,constants, shared_dict)
+            sources = self.add_lump(U_out, I_out)
+            #solution, ins = process_calculate(MC, nodes, branches, self, index, shared_dict,calculate_ins)
+            ins,saf = process_calculate(sources, self, index, calculate_saf)
+            index = index + 1
+            #if ins["FO"]:
+            if saf:
+                SAF_indirect.append(saf)
+                return FO_direct,FO_indirect,SAF_direct,SAF_indirect,huri,index
             else:
                 distances = []
                 for coord in list(self.PoleXY.values()):
@@ -1590,93 +1817,101 @@ class Network:
                 closest_two = distances[:2]
                 PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
                     , closest_two[0][1], closest_two[1][1]]
-                dataset_ins.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
+                dataset_saf.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
                 FO_indirect.append(False)
-            if saf:
-                SAF_indirect.append(saf)
-
-            else:
+                return FO_direct, FO_indirect, SAF_direct, SAF_indirect, huri, index
+        if len(dataset_saf)>0:
+            #for i,stroke in enumerate(MC[0].strokes):
+            stroke = MC[0].strokes[0]
+            icur = np.append(stroke.parameters,flash_position)
+            result = Huri_Method(R,dataset_ins,icur)
+            result_saf = Huri_Method(R, dataset_saf, icur)
+            if result ==1 and result_saf==1:
+                SAF_indirect.append(False)
+                FO_indirect.append(False)
+                huri = huri+1
                 distances = []
                 for coord in list(self.PoleXY.values()):
                     distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
                     distances.append((coord, distance))
                 distances.sort(key=lambda item: item[1])
                 closest_two = distances[:2]
-                PoleApp = [closest_two[0][0][0],closest_two[0][0][1],closest_two[1][0][0],closest_two[1][0][1]
-                                                ,closest_two[0][1],closest_two[1][1]]
+                PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
+                    , closest_two[0][1], closest_two[1][1]]
+                dataset_ins.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
                 dataset_saf.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
-                SAF_indirect.append(False)
-        return FO_direct,FO_indirect,SAF_direct,SAF_indirect,huri
-    def Huri_method_INS(self,MC_result, nodes, branches,shared_dict):
-        icurr = []
-        dataset = []
-        FO_indirect = []
-        FO_direct = []
-        R = 100
-        constants = Constant()
-        constants.ep0 = 8.85e-12
-        index = 0
-        calculate_ins = 1
-        huri = 0
-        for MC in MC_result:
-            if MC[0].type == "Direct":
-                #solution,ins = process_calculate(MC, nodes, branches, self,index,shared_dict,calculate_ins)
-                ins = process_calculate(MC, nodes, branches, self, index, shared_dict, calculate_ins)
-                index = index+1
-                #if ins["FO"]:
-                if ins:
-                    FO_direct.append(ins)
-                else:
-                    FO_direct.append(False)
-                continue
-            flash_position = MC[0].channel.hit_pos[:2]
-            if len(dataset) == 0:
-                #solution, ins = process_calculate(MC, nodes, branches, self, index, shared_dict,calculate_ins)
-                ins = process_calculate(MC, nodes, branches, self, index, shared_dict, calculate_ins)
-                index = index + 1
-                #if ins["FO"]:
-                if ins:
-                    FO_indirect.append(ins)
-                    continue
-                else:
-                    distances = []
-                    for coord in list(self.PoleXY.values()):
-                        distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
-                        distances.append((coord, distance))
-                    distances.sort(key=lambda item: item[1])
-                    closest_two = distances[:2]
-                    PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
-                        , closest_two[0][1], closest_two[1][1]]
-                    dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
-                    FO_indirect.append(False)
-                    continue
-            if len(dataset)>0:
-                #for i,stroke in enumerate(MC[0].strokes):
-                stroke = MC[0].strokes[0]
-                icur = np.append(stroke.parameters,flash_position)
-                result = Huri_Method(R,dataset,icur)
-                if result ==1:
-                    FO_indirect.append(False)
-                    huri = huri+1
-                    distances = []
-                    for coord in list(self.PoleXY.values()):
-                        distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
-                        distances.append((coord, distance))
-                    distances.sort(key=lambda item: item[1])
-                    closest_two = distances[:2]
-                    PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
-                        , closest_two[0][1], closest_two[1][1]]
-                    dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
 
-                    print("using Huri skip calculation")
-                    continue
-            #solution, ins = process_item(MC, nodes, branches, self, index, shared_dict,calculate_ins)
-            ins = process_calculate(MC, nodes, branches, self, index, shared_dict, calculate_ins)
+                print("using Huri skip calculation")
+                return FO_direct, FO_indirect, SAF_direct, SAF_indirect, huri, index
+        #solution, ins = process_item(MC, nodes, branches, self, index, shared_dict,calculate_ins)
+        U_out, I_out, shared_dict = self.source_Indirect(MC[0], nodes, branches, constants, shared_dict)
+        sources = self.add_lump(U_out, I_out)
+        ins,saf = process_calculate(sources, self, index, calculate_saf)
+        index = index + 1
+       # if ins["FO"]:
+        if ins:
+            FO_indirect.append(saf)
+
+        else:
+            distances = []
+            for coord in list(self.PoleXY.values()):
+                distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
+                distances.append((coord, distance))
+            distances.sort(key=lambda item: item[1])
+            closest_two = distances[:2]
+            PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
+                , closest_two[0][1], closest_two[1][1]]
+            dataset_ins.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
+            FO_indirect.append(False)
+        if saf:
+            SAF_indirect.append(saf)
+
+        else:
+            distances = []
+            for coord in list(self.PoleXY.values()):
+                distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
+                distances.append((coord, distance))
+            distances.sort(key=lambda item: item[1])
+            closest_two = distances[:2]
+            PoleApp = [closest_two[0][0][0],closest_two[0][0][1],closest_two[1][0][0],closest_two[1][0][1]
+                                            ,closest_two[0][1],closest_two[1][1]]
+            dataset_saf.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
+            SAF_indirect.append(False)
+        return FO_direct,FO_indirect,SAF_direct,SAF_indirect,huri,index
+    def Huri_method_INS(self,MC, nodes, branches,shared_dict,dataset,FO_indirect,FO_direct,constants,index,huri):
+        R = 100
+        calculate_ins = 1
+
+        self.T = (MC[0].strokes[0].parameters[1])*1e-6
+        self.Nt = int(np.ceil(self.T / self.dt))
+        MC[0].strokes[0].duration = (MC[0].strokes[0].parameters[1])*1e-6
+        MC[0].strokes[0].Nt = self.Nt
+        MC[0].strokes[0].t_us = np.array(list(range(self.Nt))) * self.dt
+        MC[0].strokes[0].calculate()
+        if MC[0].type == "Direct":
+            U_out, I_out, shared_dict = self.source_Direct(MC[0], MC[1], MC[2], MC[3], nodes, branches,
+                                                           constants, shared_dict)
+            sources = self.add_lump(U_out, I_out)
+            # solution,ins = process_calculate(MC, nodes, branches, self,index,shared_dict,calculate_ins)
+            ins, saf = process_calculate(sources, self, index, calculate_ins)
+            index = index+1
+            #if ins["FO"]:
+            if ins:
+                FO_direct.append(ins)
+            else:
+                FO_direct.append(False)
+            return FO_direct,FO_indirect,huri,index
+        flash_position = MC[0].channel.hit_pos[:2]
+        if len(dataset) == 0:
+            U_out, I_out, shared_dict = self.source_Indirect(MC[0], nodes, branches, constants, shared_dict)
+            sources = self.add_lump(U_out, I_out)
+            #solution, ins = process_calculate(MC, nodes, branches, self, index, shared_dict,calculate_ins)
+            ins = process_calculate(sources, self, index, calculate_ins)
             index = index + 1
-           # if ins["FO"]:
+            #if ins["FO"]:
             if ins:
                 FO_indirect.append(ins)
-
+                return FO_direct,FO_indirect,huri,index
             else:
                 distances = []
                 for coord in list(self.PoleXY.values()):
@@ -1684,11 +1919,52 @@ class Network:
                     distances.append((coord, distance))
                 distances.sort(key=lambda item: item[1])
                 closest_two = distances[:2]
-                PoleApp = [closest_two[0][0][0],closest_two[0][0][1],closest_two[1][0][0],closest_two[1][0][1]
-                                                ,closest_two[0][1],closest_two[1][1]]
+                PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
+                    , closest_two[0][1], closest_two[1][1]]
                 dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
                 FO_indirect.append(False)
-        return FO_direct,FO_indirect,huri
+                return FO_direct,FO_indirect,huri,index
+        if len(dataset)>0:
+            #for i,stroke in enumerate(MC[0].strokes):
+            stroke = MC[0].strokes[0]
+            icur = np.append(stroke.parameters,flash_position)
+            result = Huri_Method(R,dataset,icur)
+            if result ==1:
+                FO_indirect.append(False)
+                huri = huri+1
+                distances = []
+                for coord in list(self.PoleXY.values()):
+                    distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
+                    distances.append((coord, distance))
+                distances.sort(key=lambda item: item[1])
+                closest_two = distances[:2]
+                PoleApp = [closest_two[0][0][0], closest_two[0][0][1], closest_two[1][0][0], closest_two[1][0][1]
+                    , closest_two[0][1], closest_two[1][1]]
+                dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
+
+                print("using Huri skip calculation")
+                return FO_direct,FO_indirect,huri,index
+        U_out, I_out, shared_dict = self.source_Indirect(MC[0], nodes, branches, constants, shared_dict)
+        sources = self.add_lump(U_out, I_out)
+        # solution, ins = process_calculate(MC, nodes, branches, self, index, shared_dict,calculate_ins)
+        ins = process_calculate(sources, self, index, calculate_ins)
+        index = index + 1
+       # if ins["FO"]:
+        if ins:
+            FO_indirect.append(ins)
+
+        else:
+            distances = []
+            for coord in list(self.PoleXY.values()):
+                distance = math.sqrt((flash_position[0] - coord[0]) ** 2 + (flash_position[1] - coord[1]) ** 2)
+                distances.append((coord, distance))
+            distances.sort(key=lambda item: item[1])
+            closest_two = distances[:2]
+            PoleApp = [closest_two[0][0][0],closest_two[0][0][1],closest_two[1][0][0],closest_two[1][0][1]
+                                            ,closest_two[0][1],closest_two[1][1]]
+            dataset.append(np.append(np.append(MC[0].strokes[0].parameters, flash_position), PoleApp))
+            FO_indirect.append(False)
+        return FO_direct,FO_indirect,huri,index
 
     @staticmethod
     def handle_no_ins(mc, flash_position, poleXY, dataset):
@@ -1772,16 +2048,16 @@ class Network:
 
         return FO, huri, dataset
 
-def process_calculate(MC, nodes, branches, self_ref,index,shared_dict,calculate_ins):
+def process_calculate(sources,self_ref,index,calculate_saf):
     constants = Constant()
     constants.ep0 = 8.85e-12
-    U_out, I_out,shared_dict = self_ref.source_calculate(MC[0], MC[1], MC[2], MC[3], nodes, branches,constants,shared_dict)
-    sources = self_ref.add_lump(U_out, I_out)
+
     line_matrix = self_ref.H["Line"]
     tower_matrix = self_ref.H["Tower"]
     result_tower, bran = self_ref.calculate_of_hybrid_mode(line_matrix, tower_matrix, sources, self_ref.Nt, self_ref.dt, self_ref.GPU_calculation)
     print("calculate"+str(index))
-
+    FO_Tower = []
+    SAF_Arrestor = []
     ins = False
     saf = False
     if len(bran["SDEM"])>0:
@@ -1793,9 +2069,15 @@ def process_calculate(MC, nodes, branches, self_ref,index,shared_dict,calculate_
             # 创建一个csv写入器
             writer = csv.writer(csvfile)
             writer.writerow(bran["SDEM"])
+
+        FO_Tower = ["tower_"+bran.split("_")[-1] for bran in bran["SDEM"]]
+        self_ref.FO_Tower = FO_Tower
     if len(bran["NLR"])>0:
         broken_arrestor_list = [self_ref.arrestor_bran2Tower[bran][1] for bran in bran["NLR"] if bran in self_ref.arrestor_bran2Tower.keys()]
-        self_ref.broken = list(set(broken_arrestor_list))
+        #broken_Tower_list = [self_ref.arrestor_bran2Tower[bran][1] for bran in bran["NLR"] if
+        #                        bran in self_ref.arrestor_bran2Tower.keys()]
+        #SAF_Tower = list(set(broken_Tower_list))
+        self_ref.broken = broken_arrestor_list
         saf = True
         return ins,saf
     return ins,saf

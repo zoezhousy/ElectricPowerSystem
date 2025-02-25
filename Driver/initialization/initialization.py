@@ -17,7 +17,6 @@ from Model.Tower import Tower
 from Model.OHL import OHL
 from Model.Lightning import Stroke, Lightning, Channel
 from Model.Contant import Constant
-from Function.Calculators.InducedVoltage_calculate import InducedVoltage_calculate, LightningCurrent_calculate
 import pandas as pd
 from Model.Cable import Cable
 from Model.Info import TowerInfo, OHLInfo, CableInfo

@@ -19,7 +19,7 @@ def distance(node1, node2):
                      (node1.z - node2[2]) ** 2)
 
 #直接，间接雷 电流计算
-def LightningCurrent_calculate(p1, p2, position, network, node_index, lightning, stroke_sequence):
+def LightningCurrent_calculate_direct(closest_point, node_index, lightning, stroke_sequence):
     """
     【功能】
     计算直击雷的电流源矩阵
@@ -34,49 +34,50 @@ def LightningCurrent_calculate(p1, p2, position, network, node_index, lightning,
     :return:
     """
 
-    if lightning.type == 'Direct':
-        area = p1.split("_")[0]
-        # 1. 找到用户指定点所在的wire
-        selected_wire = None
-        nodes = set()
-        if area == "tower":
-            selected_tower = [tower for tower in network.towers if tower.info.name == p1]
-            selected_wire = [wire for wire in list(selected_tower[0].wires.get_all_wires().values()) if
-                             wire.name.split("_")[0] == p2.split("_")[0]]
+    #
+    # area = p1.split("_")[0]
+    # # 1. 找到用户指定点所在的wire
+    # selected_wire = None
+    # nodes = set()
+    # if area == "tower":
+    #     selected_tower = [tower for tower in network.towers if tower.info.name == p1]
+    #     selected_wire = [wire for wire in list(selected_tower[0].wires.get_all_wires().values()) if
+    #                      wire.name.split("_")[0] == p2.split("_")[0]]
+    #
+    # elif area == "OHL":
+    #     selected_ohl = [ohl for ohl in network.OHLs if ohl.name == p1]
+    #     selected_wire = [wire for wire in list(selected_ohl[0].wires.get_all_wires().values()) if
+    #                      wire.name.split("_")[0] == p2.split("_")[0]]
+    #     #all_node = [wire for wire in list(selected_ohl[0].wires.get_all_nodes())]
+    #     #nodes = set(all_node)
+    # elif area == "cable":
+    #     selected_cable = [cable for cable in network.cables if cable.name == p1]
+    #     selected_wire = [wire for wire in list(selected_cable[0].wires.get_all_wires().values()) if
+    #                      wire.name.split("_")[0] == p2]
+    # # 2. 找到用户指定点距离该wire上最近的node
+    #
+    # for wire in selected_wire:
+    #     nodes.add(wire.start_node)
+    #     nodes.add(wire.end_node)
+    #
+    # closest_point = None
+    # min_distance = float('inf')
+    #
+    # for node in nodes:
+    #     dist = distance(node, position)
+    #     if dist < min_distance:
+    #         min_distance = dist
+    #         closest_point = node
 
-        elif area == "OHL":
-            selected_ohl = [ohl for ohl in network.OHLs if ohl.name == p1]
-            selected_wire = [wire for wire in list(selected_ohl[0].wires.get_all_wires().values()) if
-                             wire.name.split("_")[0] == p2.split("_")[0]]
-            #all_node = [wire for wire in list(selected_ohl[0].wires.get_all_nodes())]
-            #nodes = set(all_node)
-        elif area == "cable":
-            selected_cable = [cable for cable in network.cables if cable.name == p1]
-            selected_wire = [wire for wire in list(selected_cable[0].wires.get_all_wires().values()) if
-                             wire.name.split("_")[0] == p2]
-        # 2. 找到用户指定点距离该wire上最近的node
+    # 3. 初始化一个 DataFrame，行索引为 Nodes，列数为 Nt
+    I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt), dtype=np.float64)
+    I_out.loc[closest_point.name] = lightning.strokes[stroke_sequence].current_waveform
+    return I_out
 
-        for wire in selected_wire:
-            nodes.add(wire.start_node)
-            nodes.add(wire.end_node)
-
-        closest_point = None
-        min_distance = float('inf')
-
-        for node in nodes:
-            dist = distance(node, position)
-            if dist < min_distance:
-                min_distance = dist
-                closest_point = node
-
-        # 3. 初始化一个 DataFrame，行索引为 Nodes，列数为 Nt
-        I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt), dtype=np.float64)
-        I_out.loc[closest_point.name] = lightning.strokes[stroke_sequence].current_waveform
-        return I_out
-    elif lightning.type == 'Indirect':
-        # 间接雷，电流源为0
-        I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt), dtype=np.float64)
-        return I_out
+def LightningCurrent_calculate_indirect(node_index, lightning, stroke_sequence):
+    # 间接雷，电流源为0
+    I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt), dtype=np.float64)
+    return I_out
 
 def InducedVoltage_calculate_direct(branch_list,lightning,stroke_sequence):
     #直击雷，电压源0

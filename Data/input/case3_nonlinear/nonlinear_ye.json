@@ -359,7 +359,7 @@
           "pointer": null,
           "comments": null
         }
-      ],F
+      ],
       "Device": [
         {
           "name": "insolator_Tower_1",
@@ -15368,7 +15368,7 @@
         "Stroke": [
           {
             "type": "Heidler",
-            "duration": 2e-5,
+            "duration": 5e-4,
             "parameters": [1e4, 8, 20, 2.4],
             "parameter_set": "2.6/50us"
           }

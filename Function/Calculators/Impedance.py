@@ -195,8 +195,8 @@ def calculate_sheath_internal_impedance_multi_core(core_wires_r, core_wires_angl
     Z = -(besseli(0, Rsa)*besselk(1, Rsb)+besselk(0, Rsa)*besseli(1, Rsb))/(besseli(1, Rsa)*besselk(1, Rsb)-besseli(1, Rsb)*besselk(1,Rsa))
     Z = np.tile(Z, (Npha, Npha))
     for n in range(15):
-        n1 = np.ones((Npha, Npha)) / (n+1)
-        np.fill_diagonal(n1, 0)
+        # n1 = np.ones((Npha, Npha)) / (n+1)
+        # np.fill_diagonal(n1, 0)
         delta = - besseli(n+2, Rsa)*besselk(n,Rsb)+besselk(n+2,Rsa)*besseli(n,Rsb)
         Z += (didk / sheath_inner_radius**2)**(n+1)*np.cos((n+1)*angle) * (2 /delta * (besselk(n,Rsb)*besseli(n+1,Rsa)+besseli(n,Rsb)*besselk(n+1,Rsa)))
 

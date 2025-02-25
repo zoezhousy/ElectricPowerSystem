@@ -10384,7 +10384,7 @@
     },
     "GPU_calculation": 1,
     "Hybrid_method": 0,
-    "Calculation_Model": 2,
+    "Calculation_Model": 0,
     "hybrid": 0
   },
 

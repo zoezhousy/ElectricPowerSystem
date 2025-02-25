@@ -2821,8 +2821,8 @@
       "ionisation_model": ""
     },
     "GPU_calculation": 0,
-    "Hybrid_method": 1,
-    "Calculation_Model": 2,
+    "Hybrid_method": 0,
+    "Calculation_Model": 0,
     "hybrid": 0
   },
 
