@@ -1246,6 +1246,9 @@
         {
           "name": "Arrestor_Tower_2",
           "type": "arrestor",
+          "arrestor_bran": ["Y22_Tower_2", "Y23_Tower_2", "Y24_Tower_2"],
+          "arrestor_node1": ["X23", "X24", "X25"],
+          "arrestor_node2": ["X29", "X30", "X31"],
           "Lump": [
             {
               "Type": "RL",
@@ -3310,6 +3313,9 @@
         {
           "name": "Arrestor_Tower_5",
           "type": "arrestor",
+          "arrestor_bran": ["Y22_Tower_5", "Y23_Tower_5", "Y24_Tower_5"],
+          "arrestor_node1": ["X81", "X82", "X83"],
+          "arrestor_node2": ["X87", "X88", "X89"],
           "Lump": [
             {
               "Type": "RL",
@@ -5375,6 +5381,9 @@
         {
           "name": "Arrestor_Tower_8",
           "type": "arrestor",
+          "arrestor_bran": ["Y22_Tower_8", "Y23_Tower_8", "Y24_Tower_8"],
+          "arrestor_node1": ["X139", "X140", "X141"],
+          "arrestor_node2": ["X145", "X146", "X147"],
           "Lump": [
             {
               "Type": "RL",
@@ -7440,6 +7449,9 @@
         {
           "name": "Arrestor_Tower_11",
           "type": "arrestor",
+          "arrestor_bran": ["Y22_Tower_11", "Y23_Tower_11", "Y24_Tower_11"],
+          "arrestor_node1": ["X197", "X198", "X199"],
+          "arrestor_node2": ["X203", "X204", "X205"],
           "Lump": [
             {
               "Type": "RL",
@@ -9505,6 +9517,9 @@
         {
           "name": "Arrestor_Tower_14",
           "type": "arrestor",
+          "arrestor_bran": ["Y22_Tower_14", "Y23_Tower_14", "Y24_Tower_14"],
+          "arrestor_node1": ["X255", "X256", "X257"],
+          "arrestor_node2": ["X261", "X262", "X263"],
           "Lump": [
             {
               "Type": "RL",
@@ -11570,6 +11585,9 @@
         {
           "name": "Arrestor_Tower_17",
           "type": "arrestor",
+          "arrestor_bran": ["Y22_Tower_17", "Y23_Tower_17", "Y24_Tower_17"],
+          "arrestor_node1": ["X313", "X314", "X315"],
+          "arrestor_node2": ["X319", "X320", "X321"],
           "Lump": [
             {
               "Type": "RL",
@@ -12478,7 +12496,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1001,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -12650,7 +12668,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1002,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -12822,7 +12840,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1003,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -12994,7 +13012,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1004,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -13166,7 +13184,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1005,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -13338,7 +13356,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1006,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -13510,7 +13528,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1007,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -13682,7 +13700,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1008,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -13854,7 +13872,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1009,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -14026,7 +14044,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1010,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -14198,7 +14216,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1011,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -14370,7 +14388,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1012,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -14542,7 +14560,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1013,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -14714,7 +14732,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1014,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -14886,7 +14904,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1015,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -15058,7 +15076,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1016,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -15230,7 +15248,7 @@
           "vfid_a": 0,
           "num": 1,
           "cir_id": 1017,
-          "phase": "A",
+          "phase": "S",
           "phase_num": 1,
           "mode1": 0,
           "mode2": 2,
@@ -15379,7 +15397,7 @@
 
   "Global": {
     "delta_time": 1e-08,
-    "time": 1e-4,
+    "time": 1e-5,
     "constant_frequency": 2e4,
     "max_length": 20,
     "global_ground": 1,
@@ -15396,6 +15414,7 @@
     "Hybrid_method": 1
   },
   "Sensitivity_analysis":{
+    "mode": 1,
     "Stroke": {
       "position": null,
       "area": null,
@@ -15407,10 +15426,10 @@
     },
     "Soil": [],
     "Arrester": {
-      "name": []
+      "name": null
     },
     "SW": {
-      "name": []
+      "name": null
 
     },
     "ROD": {
@@ -15425,7 +15444,7 @@
 
   },
   "MC": {
-    "surrounding_distance": 1000,
+    "surrounding_distance": 1500,
     "MC_lgtn": {
       "casemodel": 1,
       "Dymax":1500,

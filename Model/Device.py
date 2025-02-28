@@ -3,6 +3,9 @@ class Devices:
         self.insulators = insulators or []
         self.arrestors = arrestors or []
         self.transformers = transformers or []
+        self.arrestors_bran = []
+        self.arrestors_node1 = []
+        self.arrestors_node2 = []
 
     def add_insolator(self, insolator):
         """
@@ -10,11 +13,14 @@ class Devices:
         """
         self.insulators.append(insolator)
 
-    def add_arrestor(self, arrestor):
+    def add_arrestor(self, arrestor, bran, node1, node2):
         """
         添加避雷器
         """
         self.arrestors.append(arrestor)
+        self.arrestors_bran.extend(bran)
+        self.arrestors_node1.extend(node1)
+        self.arrestors_node2.extend(node2)
 
     def add_transformer(self, transformer):
         """

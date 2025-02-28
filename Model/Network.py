@@ -12,6 +12,7 @@ import copy
 import pyarrow as pa
 import pyarrow.csv as pacsv
 import matplotlib.pyplot as plt
+from Sensitive.single_change import run_sensitivity_analysis
 # from Demos.BackupRead_BackupWrite import tempfile
 from Risk_Evaluate.MC import run_MC
 from Driver.initialization.initialization import initialize_OHL, initialize_tower, initial_lightning, initial_lump, \
@@ -28,7 +29,7 @@ from Function.Calculators.InducedVoltage_calculate import InducedVoltage_calcula
 from Model.Cable import Cable
 from Model.Lightning import Lightning
 from Model.Tower import Tower
-from Model.Wires import OHLWire
+from Model.Wires import OHLWire, Wires
 from Utils.Math import distance, segment_branch
 import Model.Strategy as Strategy
 from Model.Contant import Constant
@@ -281,22 +282,18 @@ class Network:
                     raise ValueError("bran cannot be None")
                 U_out, I_out, shared_dict = self.source_calculate(lightning, light["area"], bran,
                                                      light["position"], nodes, branches, constants,share_dict)
-                sources = self.add_source(U_out, I_out)
+                sources = self.add_lump(U_out, I_out)
                 return sources
             if light["area"].split("_")[0] == "tower":
                 U_out, I_out, share_dict = self.source_calculate(lightning,
                                                                  light["area"], light["wire"], light["position"], nodes,
                                                                  branches, constants, share_dict)
-                sources = self.add_source(U_out, I_out)
+                sources = self.add_lump(U_out, I_out)
                 return sources
         else:
             U_out = pd.DataFrame()
             I_out = pd.DataFrame()
-            for model_list in [self.towers, self.OHLs, self.cables]:
-                for model in model_list:
-                    U_out = U_out.add(model.voltage_source_matrix, fill_value=0).fillna(0)
-                    I_out = I_out.add(model.current_source_matrix, fill_value=0).fillna(0)
-            sources = pd.concat([U_out, I_out], axis=0)
+            sources = self.add_lump(U_out, I_out)
             return sources
 
     #计算直击雷
@@ -483,13 +480,19 @@ class Network:
                     nonlinear_dict['TCS'] = np.vstack((nonlinear_dict['TCS'], temp_dict['TCS']))
                     nonlinear_dict['NLR'] = np.vstack((nonlinear_dict['NLR'], temp_dict['NLR']))
 
+            arrestor_bran = np.array(tower.devices.arrestors_bran)
+            arrestor_node1 = np.array(tower.devices.arrestors_node1)
+            arrestor_node2 = np.array(tower.devices.arrestors_node2)
+
             matrix_dict = {'incidence_matrix_A': tower.incidence_matrix_A,
                            'incidence_matrix_B': tower.incidence_matrix_B,
                            'resistance_matrix': tower.resistance_matrix, 'inductance_matrix': tower.inductance_matrix,
                            'capacitance_matrix': tower.capacitance_matrix,
                            'conductance_matrix': tower.conductance_matrix, 'A': A,
                            'B': B, 'phi': phi, 'SDEM': nonlinear_dict['SDEM'], 'VCS': nonlinear_dict['VCS'],
-                           'TCS': nonlinear_dict['TCS'], 'NLR': nonlinear_dict['NLR'], 'vf_bran': vf_bran}
+                           'TCS': nonlinear_dict['TCS'], 'NLR': nonlinear_dict['NLR'], 'vf_bran': vf_bran,
+                           "arrestor_bran": arrestor_bran, "arrestor_node1": arrestor_node1,
+                           "arrestor_node2": arrestor_node2}
             tower_matrix.append(matrix_dict)
         return tower_matrix
 
@@ -667,6 +670,7 @@ class Network:
         """
         solution_type_id: 'hybrid', 'nonlinear', 'variable_frequency', 'variant_step'
         """
+        GPU=0
         solution_type_id = self.update_solution_type()
         match solution_type_id:
             case '1000':
@@ -740,7 +744,7 @@ class Network:
     # 基础模块 分布运行
     def run_hybrid(self, load_dict):
         print("Hybrid model is used")
-        #self.global_set(load_dict)
+        self.global_set(load_dict)
         constants = Constant()
         self.dt = self.max_length / constants.vc
         self.Nt = int(np.ceil(self.T / self.dt))
@@ -822,80 +826,34 @@ class Network:
         print(solution)
         return measure_result
 
+    # 运行一次的灵敏度分析
     def sensitive_analysis(self, load_dict):
+        # 检查是否使用 hybrid 模式
+        use_hybrid = load_dict.get("Global", {}).get("Hybrid_method", 0) == 1
 
-        if load_dict["Sensitivity_analysis"]["Stroke"]["position"]:
-            wire = load_dict["Sensitivity_analysis"]["Stroke"]["area"]
-            area = load_dict["Sensitivity_analysis"]["Stroke"]["area"]
-            if area.split("_")[0] == "tower":
-                for obj in load_dict["Tower"]:
-                    for w in obj["Wire"]:
-                        if load_dict["Sensitivity_analysis"]["Stroke"]["wire"]:
-                            if w["name"] ==wire:
-                                Strategy.Change_light_pos().apply(self,self.lightning,
-                                                  load_dict["Sensitivity_analysis"]["Stroke"]["area"],
-                                                  w,
-                                                load_dict["Sensitivity_analysis"]["Stroke"]["position"])
-            if area.split("_")[0] == "OHL":
-                for obj in load_dict["OHL"]:
-                    for w in obj["Wire"]:
-                        if load_dict["Sensitivity_analysis"]["Stroke"]["cir_id"]:
-                            if w["cir_id"] ==load_dict["Sensitivity_analysis"]["Stroke"]["cir_id"]\
-                                    and w["phase"] ==load_dict["Sensitivity_analysis"]["Stroke"]["phase"]:
-                                Strategy.Change_light_pos().apply(self, self.lightning,
-                                                                  load_dict["Sensitivity_analysis"]["Stroke"]["area"],
-                                                                  w,
-                                                                  load_dict["Sensitivity_analysis"]["Stroke"]["position"])
-                                break
-                    break
-        if load_dict["Sensitivity_analysis"]["Stroke"]["waveform"]:
-            Strategy.Change_light_waveform().apply(self,load_dict["Source"]["Lightning"],
-                                                   load_dict["Sensitivity_analysis"]["Stroke"]["waveform"],
-                                                   load_dict)
+        if use_hybrid:
+            self.solution_type['hybrid'] = True
+            # initial_result = self.run_hybrid(load_dict)
+            # initial_filename = "Data/Output/initial_hybrid_output.csv"
+            # pd.DataFrame(initial_result).to_csv(initial_filename)
+            # print(f"Initial hybrid result saved to {initial_filename}")
+        # else:
+        #     initial_result = self.run_base(load_dict)
+        #     initial_filename = "Data/Output/initial_base_output.csv"
+        #     pd.DataFrame(initial_result[0]).to_csv(initial_filename)
+        #     print(f"Initial base result saved to {initial_filename}")
+        #
+        # if "Sensitivity_analysis" not in load_dict:
+        #     print("No sensitivity analysis parameters provided.")
+        #     return initial_result, None
 
-        if load_dict["Sensitivity_analysis"]["Stroke"]["paramenters"]:
-            Strategy.Change_light_waveform().apply(self, load_dict["Source"]["Lightning"],
-                                                   load_dict["Sensitivity_analysis"]["Stroke"]["paramenters"],
-                                                   load_dict)
+        sa_dict = load_dict["Sensitivity_analysis"]
+        mode = sa_dict.get("mode", 1)
 
-        if load_dict["Sensitivity_analysis"]["Arrester"]["name"]:
-            name = load_dict["Sensitivity_analysis"]["Arrester"]["name"]
-            Strategy.Change_Arrestor().apply(self, load_dict,name)
+        result_before, result_after = run_sensitivity_analysis(self, load_dict, sa_dict, use_hybrid, mode)
+        return result_before, result_after
 
-        if load_dict["Sensitivity_analysis"]["SW"]["name"]:
-            name = load_dict["Sensitivity_analysis"]["SW"]["name"]
-            Strategy.Change_SW().apply(self,load_dict,name)
-
-        if load_dict["Sensitivity_analysis"]["DE"]:
-            Strategy.Change_DE_max().apply(self,load_dict["Sensitivity_analysis"]["DE"])
-            line_matrix = self.H["Line"]
-            tower_matrix = self.H["Tower"]
-            branches, nodes = self.calculate_branches(self.max_length)
-
-            record_SAF = load_dict["MC"]["Record_SAF"]
-
-            # result_tower, other = self.calculate_of_hybrid_mode(line_matrix, tower_matrix, self.sources, self.Nt, self.dt,
-            #                                                     self.GPU_calculation)
-            summary = self.MC_calculate(record_SAF, self.MC_flash, nodes, branches)
-            # broken_arrestor_list = [self.arrestor_bran2Tower[bran][1] for bran in other["NLR"] if
-            #                         bran in self.arrestor_bran2Tower.keys()]
-            # self.broken = list(set(broken_arrestor_list))
-
-            #measure_result = self.run_measure(result_tower)
-            return summary
-
-
-
-        if load_dict["Sensitivity_analysis"]["ROD"]:
-            for tower in load_dict["Tower"]:
-                if tower["name"] ==load_dict["Sensitivity_analysis"]["ROD"]["tower"]:
-                    Strategy.Change_ROD().apply(self,load_dict,
-                                        load_dict["Sensitivity_analysis"]["ROD"]["lump"],
-                                        load_dict["Sensitivity_analysis"]["ROD"]["r"],
-                                        load_dict["Sensitivity_analysis"]["ROD"]["l"])
-
-        print("you are starting sensitive analysis")
-
+    # 运行多次的灵敏度分析
     def sensitive_MC(self,load_dict):
         self.solution_type['hybrid'] = True
         self.global_set(load_dict)
@@ -918,26 +876,10 @@ class Network:
         # 2. 保存支路节点信息
         branches,nodes = self.calculate_branches(self.max_length)
 
-        #branches = segment_branch(branches)
-        #nodes =list(tower_nodes | set(line_matrix["capacitance_matrix"].columns.tolist()))
-
-
-
-        # 3. 生成多个雷电
-        dataset_ins = []
-        dataset_saf = []
-        FO_direct = []
-        FO_indirect = []
-        SAF_direct = []
-        SAF_indirect = []
-        dataset = []
-        shared_dict = {}
-        R = 100
         constants = Constant()
         constants.ep0 = 8.85e-12
         index = 0
-        calculate_saf = 1
-        huri = 0
+
 
         if load_dict["MC"]:
             # MC_result = self.MC_generate_flash(load_dict)
@@ -999,50 +941,82 @@ class Network:
                                      columns=column_names)
             # 创建name到对象的映射（因为字典的key是对象）
             node_dict = {node.name: node for node in all_stroke_node.keys()}
-
-            #for closet_node in all_stroke_node:
-            for col in column_names:
-                node_name,selected_amplitudes, selected_parameter = col.split('_', 2)
+            # 定义处理每个列的函数
+            def process_col(args):
+                i, col, self_copy, node_dict, branches, nodes = args
+                # 解析列名
+                node_name, selected_amplitudes, selected_parameter = col.split('_', 2)
                 selected_parameter = selected_parameter.replace('_', '/')
                 selected_amplitudes = int(selected_amplitudes)
                 closet_node = node_dict[node_name]
-                # 随机选择一个幅值
-                #selected_amplitudes = random.choices(amplitudes, weights=probabilities, k=1)[0]
-                #selected_parameter = random.choices(parameter, weights=probabilities2, k=1)[0]
-                # 提取数字
+
+                # 提取时间参数
                 numbers = selected_parameter.split("/")[0], selected_parameter.split("/")[1].rstrip("us")
                 front_time, tail_time = int(numbers[0]), int(numbers[1])
 
-                # 计算
-                time = front_time*1e-6 + 2 * tail_time*1e-6
+                # 计算雷击参数
+                time = front_time * 1e-6 + 2 * tail_time * 1e-6
                 stroke1 = Stroke('Heidler', duration=time, dt=1.0e-8, is_calculated=True, parameter_set=selected_parameter)
-                stroke1.parameters[0] = selected_amplitudes*1000
-                self.T = (stroke1.parameters[1]) * 1e-6
-                self.Nt = int(np.ceil(self.T / self.dt))
-                stroke1.Nt = self.Nt
-                stroke1.t_us = np.array(list(range(self.Nt))) * self.dt
+                stroke1.parameters[0] = selected_amplitudes * 1000
+                self_copy.T = time
+                self_copy.Nt = int(np.ceil(self_copy.T / self_copy.dt))
+                stroke1.Nt = self_copy.Nt
+                stroke1.t_us = np.array(list(range(self_copy.Nt))) * self_copy.dt
                 stroke1.calculate()
                 strokes = [stroke1]
                 channel = Channel(hit_pos=[50, 500, 0])
                 lightning = Lightning(id=1, type='Direct', strokes=strokes, channel=channel)
+
+                # 计算电压和电流
                 U_out = pd.DataFrame()
                 I_out = pd.DataFrame()
-                for i in range(len(lightning.strokes)):
-                    new_U = InducedVoltage_calculate_direct(branches, lightning, i)
+                for j in range(len(lightning.strokes)):
+                    new_U = InducedVoltage_calculate_direct(branches, lightning, j)
                     U_out = pd.concat([U_out, new_U], axis=1, ignore_index=True)
                     I_out = pd.concat([I_out,
-                                       LightningCurrent_calculate_direct(closet_node, nodes, lightning,
-                                                                         stroke_sequence=i)],
-                                      axis=1, ignore_index=True)
-                sources = self.add_lump(U_out, I_out)
-                ins, saf = process_calculate(sources, self, index, calculate_saf=1)
-                index +=1
-                #closet_name = closet_node.name+"_"+str(selected_amplitudes)+"_"+str(selected_parameter.replace('/', '_'))
-                for tower_name in self.FO_Tower:
+                                    LightningCurrent_calculate_direct(closet_node, nodes, lightning, stroke_sequence=j)],
+                                    axis=1, ignore_index=True)
+
+                # 添加源并计算
+                sources = self_copy.add_lump(U_out, I_out)
+                ins, saf = process_calculate(sources, self_copy, i, calculate_saf=1)
+
+                # 返回结果
+                return col, self_copy.FO_Tower, self_copy.broken
+
+            # 主程序部分
+            from pathos.multiprocessing import ProcessPool
+            from tqdm import tqdm
+            # import pandas as pd
+            # import numpy as np
+
+            # 假设 self 是包含必要属性的实例，column_names、FO_matrix、SAF_matrix 已定义
+            # 示例：FO_matrix = pd.DataFrame(...), SAF_matrix = pd.DataFrame(...)
+
+            # 创建进程池
+            num_cores = os.cpu_count()
+            pool = ProcessPool(nodes=num_cores)  # 使用 4 个进程，可根据 CPU 核心数调整
+
+            # 准备参数列表
+            args_list = [(i, col, self, node_dict, branches, nodes) for i, col in enumerate(column_names)]
+
+            # 并行执行并获取结果迭代器
+            results = pool.imap(process_col, args_list)
+
+            # 收集结果并更新矩阵，同时显示进度
+            for col, FO_rows, SAF_rows in tqdm(results, total=len(column_names)):
+                for tower_name in FO_rows:
                     FO_matrix.loc[tower_name, col] = 1
-                for broke_arrestor in self.broken:
+                for broke_arrestor in SAF_rows:
                     SAF_matrix.loc[broke_arrestor, col] = 1
+
+            # 关闭进程池
+            pool.close()
+            pool.join()
+
+            # 输出结果
             print(FO_matrix)
+            return FO_matrix, SAF_matrix
 
 
     def closest_node(self,p1,p2,position):
@@ -1310,10 +1284,12 @@ class Network:
                             if cir_id_ohl == cir_id:
                                 z = w["node1_pos"][2]
                                 position = position_xy.append(z)
-                                if w['type'] == 'SW':
-                                    wire = 'Y' + str(cir_id) + 'S'
-                                elif w['type'] == 'CIRO':
-                                    wire = 'Y' + str(cir_id) + w['phase']
+                                if w['phase'] == phase_lgt:
+                                    wire = 'Y' + str(cir_id) + str(phase_lgt)
+                                # if w['type'] == 'SW':
+                                #     wire = 'Y' + str(cir_id) + 'S'
+                                # elif w['type'] == 'CIRO':
+                                #     wire = 'Y' + str(cir_id) + w['phase']
 
             # if flash_type=="Indirect":
             #     continue

@@ -33,118 +33,6 @@ class Strategy(ABC):
 
 
 
-class Change_light_pos(Strategy):
-    def apply(self,network,lightning,area,wire,new_pos):
-        print("change light position calculation is used")
-
-        lightning.channel.hit_pos = new_pos
-        cir_id = wire['cir_id']
-        if wire['type'] == 'SW':
-            bran = 'Y' + str(cir_id) + 'S'
-            network.sources = network.source_calculate(lightning, area, bran, new_pos)
-        elif wire['type'] == 'CIRO':
-            bran = 'Y' + str(cir_id) + wire['phase']
-            network.sources = network.source_calculate(lightning,area,bran, new_pos)
-        else:
-            network.sources = network.source_calculate(lightning, area, wire["name"], new_pos)
-        network.calculate(network.dt,network.H,network.sources)
-
-class Change_light_waveform(Strategy):
-    def apply(self, network, lightning, new_waveform, pos_dict):
-        print("change light waveform calculation is used")
-
-        lightning.channel.hit_pos = new_waveform
-        network.sources = network.source_calculate(lightning, pos_dict)
-        network.calculate(network.dt, network.H, network.sources)
-
-class Change_light_parameters(Strategy):
-    def apply(self, network, lightning, new_parameters, pos_dict):
-        print("change light parameters calculation is used")
-        for stroke in lightning.strokes:
-            stroke.parameters = new_parameters #
-            stroke.current_waveform = []
-            stroke.calculate()
-        network.sources = network.source_calculate(lightning, pos_dict)
-        network.calculate(network.dt, network.H, network.sources)
-
-class Change_ROD(Strategy):
-    def apply(self, network, load_dict,lumpname,r,l):
-        print("change ROD calculation is used")
-        for tower in load_dict["Tower"]:
-            for lump in tower["Lump"]:
-                if lump["name"] == lumpname:
-                    lump["value1"] = r
-                    lump["value2"] = l
-        network.towers = []
-        network.initial_tower(load_dict)
-        network.combine_parameter_matrix()
-        network.calculate(network.dt, network.H, network.sources)
-        pd.DataFrame(network.run_measure()).to_csv("ROD_modified.csv")
-
-class Change_ground(Strategy):
-    def apply(self, load_dict, new_parameter):
-        print("change ground calculation")
-        load_dict['Global']["ground"] = new_parameter  # 修改值
-
-        with open("modified", 'w') as file:
-            json.dump(load_dict, file, indent=4)
-
-        network = Network()
-        network.run(load_dict)
-
-class Change_Arrestor_pos(Strategy):
-    def apply(self, network, load_dict, remove_tower_list):
-        print("changing arrestor position calculation")
-        # for tower in network.towers:
-        #     for device in tower.devices:
-        #         for arrestor in device.arrestors:
-        #             if arrestor.name == name:
-        #                 arrestor.capacitance_matrix = arrestor.capacitance_matrix.rename(columns=node_mapping,index=node_mapping)
-        #                 arrestor.inductance_matrix = arrestor.inductance_matrix.rename(columns=wire_mapping,index=wire_mapping)
-        #                 arrestor.incidence_matrix_A = arrestor.incidence_matrix_A.rename(columns=node_mapping,index=wire_mapping)
-        #                 arrestor.inductance_matrix_B = arrestor.inductance_matrix_B.rename(columns=node_mapping,index=wire_mapping)
-        #                 arrestor.resistance_matrix = arrestor.resistance_matrix.rename(columns=wire_mapping,index=wire_mapping)
-        #                 arrestor.conductance_matrix = arrestor.conductance_matrix.rename(columns=node_mapping,index=node_mapping)
-        #     tower.reset_matrix()
-        #     gnd = network.ground if network.global_ground == 1 else tower.ground
-        #     tower_building(tower, network.f0, network.max_length, gnd, network.varied_frequency)
-        #
-        #     network.combine_parameter_matrix()
-        #     network.calculate(network.dt,network.H,network.sources)
-        for tower in load_dict["Tower"]:
-            if tower['name'] in remove_tower_list:
-                tower["Device"] = [device for device in tower["Device"] if device['name'].split("_") != "Arrester"]
-        network.run(load_dict)
-        with open("modified_Arrester", 'w') as file:
-            json.dump(load_dict, file, indent=4)
-
-class Change_SW(Strategy):
-    def apply(self, network, load_dict, name):
-
-        for ohl in load_dict['OHL']:
-            #if ohl.name == name:
-                # if position:
-                #     ohl["position"] = position # 修改值
-                # if bran:
-                #     ohl["bran"] = bran # 修改值
-                # load_dict['OHL'][index] = ohl
-            if ohl.name == name:
-                ohl["Wire"] = [wire for wire in ohl["Wire"] if wire['type'] != "SW"]
-        with open("modified_SW", 'w') as file:
-            json.dump(load_dict, file, indent=4)
-
-        network.run(load_dict)
-
-class Change_DE_max(Strategy):
-    def apply(self, network, DE_max):
-        print("Changing DE max calculation is used")
-        for index, lump in enumerate(network.switch_disruptive_effect_models):
-            lump.parameters['DE_max'] = DE_max
-            switch_disruptive_copy = copy.deepcopy(network.switch_disruptive_effect_models)
-            switch_disruptive_copy[index] = lump
-        network.H["switch_disruptive_effect_models"] = switch_disruptive_copy
-
-
 
 class NonLinear(Strategy):
     def apply(self,Nt,dt,H,sources):
@@ -585,6 +473,10 @@ class Hybrid_Strategy:
             ohl_cross_index = temp.loc[tower_and_line_nodes].to_list()
 
             C0 = line_capacitance.loc[tower_and_line_nodes, tower_and_line_nodes]
+            ########
+            # tower['capacitance_matrix'].loc[tower_and_line_nodes, tower_and_line_nodes] += C0
+            # C_t = tower['capacitance_matrix'].to_numpy()
+
             Nout_tower = len(tower_and_line_nodes)
             Cw = pd.DataFrame(np.zeros((Nout_tower, len(tower_nodes))), index=tower_and_line_nodes,
                               columns=columns_t.to_list())
@@ -599,9 +491,19 @@ class Hybrid_Strategy:
             C0n = C0.to_numpy() * 2
             # 构造非线性更新矩阵，便于利用矩阵形式进行非线性计算
             SDEM, VCS, TCS, NLR = tower['SDEM'], tower['VCS'], tower['TCS'], tower['NLR']
-            SDEM_index, SDEM_para, VCS_index, VCS_para, TCS_index, TCS_para, NLR_index, NLR_para  = self.preparing_nonlinear_matrix(SDEM, VCS, TCS, NLR, index_t, columns_t)
+            SDEM_index, SDEM_para, VCS_index, VCS_para, TCS_index, TCS_para, NLR_index, NLR_para = self.preparing_nonlinear_matrix(
+                SDEM, VCS, TCS, NLR, index_t, columns_t)
             SDEM_bran = SDEM[:, 0].tolist()
             NLR_bran = NLR[:, 0].tolist()
+            # IG_P = tower['IG_P']
+            temp1 = pd.Series(range(columns_t.shape[0]), index=columns_t)
+            temp2 = pd.Series(range(index_t.shape[0]), index=index_t)
+            # vf_bran = temp2.loc[tower['vf_bran']].to_list()
+            arrestor_bran = temp2.loc[tower['arrestor_bran']].to_numpy(dtype=int)
+            arrestor_node1 = temp1.loc[tower['arrestor_node1']].to_numpy(dtype=int)
+            arrestor_node2 = temp1.loc[tower['arrestor_node2']].to_numpy(dtype=int)
+            arrestor_energy = np.zeros((len(arrestor_bran), ))
+            arrestor_bran_name = tower['arrestor_bran']
 
             if GPU:
                 A_t, B_t, phi_t = transfer_date_to_gpu(A_t, B_t, phi_t)
@@ -609,6 +511,8 @@ class Hybrid_Strategy:
                 source_t, C0n, Cwn, zero, out_t = transfer_date_to_gpu(source_t, C0n, Cwn, zero, out_t)
                 SDEM_index, SDEM_para, VCS_index  = transfer_date_to_gpu(SDEM_index, SDEM_para, VCS_index)
                 VCS_para, TCS_index, TCS_para = transfer_date_to_gpu(VCS_para, TCS_index, TCS_para)
+                arrestor_energy, arrestor_bran, arrestor_node1 = transfer_date_to_gpu(arrestor_energy, arrestor_bran, arrestor_node1)
+                arrestor_node2, arrestor_bran_name = transfer_date_to_gpu(arrestor_node2, arrestor_bran_name)
 
             tower_cal = {'ima': ima_t, 'imb': imb_t, 'R': R_t, 'L': L_t, 'G': G_t, 'C': C_t, 'out': out_t,
                          'source': source_t, 'tower_cross_index': tower_cross_index, 'C0n': C0n, 'Cwn': Cwn, 'E': E,
@@ -618,7 +522,8 @@ class Hybrid_Strategy:
                          'ohl_cross_index': ohl_cross_index, 'node_index': columns_t.tolist(),
                          'bran_index': index_t.tolist(), 'zero': zero, 'vf_bran': tower['vf_bran'],
                          'NLR_index': NLR_index, 'NLR_para': NLR_para, 'NLR_E': 0, 'SDEM_bran': SDEM_bran,
-                         'NLR_bran': NLR_bran}
+                         'NLR_bran': NLR_bran, 'arrestor_bran': arrestor_bran, 'arrestor_node1': arrestor_node1,
+                         'arrestor_node2': arrestor_node2, 'arrestor_energy': arrestor_energy, "arrestor_bran_name": arrestor_bran_name}
 
             towers_calculation.append(tower_cal)
 
@@ -943,7 +848,7 @@ class hybrid_nonlinear(Hybrid_Strategy):
                 TCS_index = itcal['TCS_index']
                 TCS_para = itcal['TCS_para']
                 t = dt * (i + 1)
-                index_con1 = t >= TCS_para[:, 0] and t < TCS_index[:, 1]
+                index_con1 = (t >= TCS_para[:, 0]) & (t < TCS_para[:, 1])
                 index_r1 = TCS_index[index_con1]
                 itcal['R'][index_r1, index_r1] = TCS_para[index_con1, 2]
                 index_con2 = argwhere(t >= TCS_para[:, 1])
@@ -954,12 +859,21 @@ class hybrid_nonlinear(Hybrid_Strategy):
 
                 for i_nlr in range(len(itcal['NLR_index'])):
                     index_r = itcal['NLR_index'][i_nlr, 0]
-                    itcal['R'][index_r, index_r] = itcal['NLR_para'][i_nlr](max(abs(Ibran_t_n[index_r]), 1e-2))
+                    itcal['R'][index_r, index_r] = min(itcal['NLR_para'][i_nlr](max(abs(Ibran_t_n[index_r]), 1e-2)), 1e6)
                 # 判断损坏代码
-                v_diff = abs(Vnode_t_ref[itcal['NLR_index'][:, 1]] - Vnode_t_ref[itcal['NLR_index'][:, 2]])
-                itcal['NLR_E'] += Ibran_t_n[itcal['NLR_index'][:, 0]] * v_diff * dt
-                index_con = [itcal['NLR_bran'][dnlr[0]] for dnlr in argwhere(itcal['NLR_E'] >= 30000).tolist()]
-                damaged_NLR.extend(index_con)
+                arrestor_bran = itcal['arrestor_bran']
+                arrestor_node1 = itcal['arrestor_node1']
+                arrestor_node2 = itcal['arrestor_node2']
+                v_diff = abs(Vnode_t_ref[arrestor_node1] - Vnode_t_ref[arrestor_node2])
+                itcal['arrestor_energy'] += abs(Ibran_t_n[arrestor_bran]) * v_diff * dt
+                index_con1 = itcal['arrestor_energy'] >= 30000
+                index_con2 = [itcal['arrestor_bran_name'][dnlr[0]] for dnlr in argwhere(index_con1).tolist()]
+                damaged_NLR.extend(index_con2)
+                itcal['arrestor_bran'] = delete(arrestor_bran, index_con1, axis=0)
+                itcal['arrestor_node1'] = delete(arrestor_node1, index_con1, axis=0)
+                itcal['arrestor_node2'] = delete(arrestor_node2, index_con1, axis=0)
+                itcal['arrestor_energy'] = delete(itcal['arrestor_energy'], index_con1, axis=0)
+                itcal['arrestor_bran_name'] = delete(itcal['arrestor_bran_name'], index_con1, axis=0)
                 # if index_con:
                 #     break
 
@@ -1119,12 +1033,21 @@ class hybrid_nonliear_variant_frequency(Hybrid_Strategy):
 
                 for i_nlr in range(len(itcal['NLR_index'])):
                     index_r = itcal['NLR_index'][i_nlr, 0]
-                    itcal['R'][index_r, index_r] = itcal['NLR_para'][i_nlr](max(abs(Ibran_t_n[index_r]), 1e-2))
+                    itcal['R'][index_r, index_r] = min(itcal['NLR_para'][i_nlr](max(abs(Ibran_t_n[index_r]), 1e-2)), 1e6)
                 # 判断损坏代码
-                # v_diff = abs(Vnode_t_ref[itcal['NLR_index'][:, 1]] - Vnode_t_ref[itcal['NLR_index'][:, 2]])
-                # itcal['NLR_E'] += Ibran_t_n[itcal['NLR_index'][:, 0]] * v_diff * dt
-                # index_con = [itcal['NLR_bran'][dnlr] for dnlr in argwhere(itcal['NLR_E'] >= 30000)]
-                # damaged_NLR.extend(index_con)
+                arrestor_bran = itcal['arrestor_bran']
+                arrestor_node1 = itcal['arrestor_node1']
+                arrestor_node2 = itcal['arrestor_node2']
+                v_diff = abs(Vnode_t_ref[arrestor_node1] - Vnode_t_ref[arrestor_node2])
+                itcal['arrestor_energy'] += abs(Ibran_t_n[arrestor_bran]) * v_diff * dt
+                index_con1 = itcal['arrestor_energy'] >= 30000
+                index_con2 = [itcal['arrestor_bran_name'][dnlr[0]] for dnlr in argwhere(index_con1).tolist()]
+                damaged_NLR.extend(index_con2)
+                itcal['arrestor_bran'] = delete(arrestor_bran, index_con1, axis=0)
+                itcal['arrestor_node1'] = delete(arrestor_node1, index_con1, axis=0)
+                itcal['arrestor_node2'] = delete(arrestor_node2, index_con1, axis=0)
+                itcal['arrestor_energy'] = delete(itcal['arrestor_energy'], index_con1, axis=0)
+                itcal['arrestor_bran_name'] = delete(itcal['arrestor_bran_name'], index_con1, axis=0)
                 # if index_con:
                 #     break
 

@@ -15,8 +15,8 @@ class StrokeParameters:
     HEIDLER_PARAMETERS = {
         '0.25/100us': [0.9, 0.25, 100, 2],
         '0.25/2.5us': [10.7e3, 0.25, 2.5, 2],
-        '8/20us': [30e3,15.5, 4.3, 5],
-        '1/50us':[30e3,1,68,5],
+        '8/20us': [30e3,3.55, 27, 2],
+        '1/50us':[30e3,0.455,68.5,2],
         '2.6/50us': [10e5, 2.6, 50, 2.1],
         '10/350us': [44.43, 10, 350, 2.1]
     }
@@ -184,21 +184,23 @@ class Lightning:
 
 
 if __name__ == '__main__':
-    stroke1 = Stroke('CIGRE', duration=3.0e-5, dt=1.0e-8, is_calculated=True, parameter_set='2.6/50us',
-                    parameters=[6.93772189214845e-06, 3002387301.704372, 8.308185882194957e+28, 4.794578080726913, 40237.49524578007, 0.0001728047051820448, 4085.6857149462894, 2.9554703341344266e-07, 40168.67725648198, 39888.619574531665])
+    stroke1 = Stroke('Heidler', duration=8.0e-5, dt=1.0e-8, is_calculated=True, parameter_set='1/50us')
+                    # parameters=[6.93772189214845e-06, 3002387301.704372, 8.308185882194957e+28, 4.794578080726913, 40237.49524578007, 0.0001728047051820448, 4085.6857149462894, 2.9554703341344266e-07, 40168.67725648198, 39888.619574531665])
     # stroke2 = Stroke('Heidler', duration=1e-3, is_calculated=True, parameter_set='2.6/50us',
     #                 parameters=None)
+    stroke1.calculate()
     strokes = [stroke1]
     channel = Channel(hit_pos=[50, 500, 0])
     lightning = Lightning(id=1, type='Indirect', strokes=strokes, channel=channel)
     t = []
-    last_stroke_duration = 0
-    for stroke in lightning.strokes:
-        t_us = stroke.t_us + last_stroke_duration
-        t.append(t_us)
-        last_stroke_duration = stroke.duration
-    t = np.concatenate(t, axis=0)
-    I = lightning.total_waveform()
+    # last_stroke_duration = 0
+    # for stroke in lightning.strokes:
+    #     t_us = stroke.t_us + last_stroke_duration
+    #     t.append(t_us)
+    #     last_stroke_duration = stroke.duration
+    # t = np.concatenate(t, axis=0)
+    t = stroke1.t_us
+    I = stroke1.current_waveform
     plt.xlabel('时间 (s)')
     plt.ylabel('电流 (A)')
     plt.plot(t, I)

@@ -407,7 +407,7 @@ def initial_device(device_data, dt, T, measurement):
         if device['type'] == 'insulator':
             devices.add_insolator(lumps)
         elif device['type'] == 'arrestor':
-            devices.add_arrestor(lumps)
+            devices.add_arrestor(lumps, device['arrestor_bran'], device['arrestor_node1'], device['arrestor_node2'])
         elif device['type'] == 'transformer':
             devices.add_transformer(lumps)
     # d = data.shape[0]
