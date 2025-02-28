@@ -772,13 +772,10 @@ class Network:
         # result_v_ohl = pa.Table.from_pandas(result_v_ohl.T)
         # result_i_ohl = pa.Table.from_pandas(result_i_ohl.T)
         sources_pa = pa.Table.from_pandas(self.sources.T)
-        pacsv.write_csv(result_tower, "Data/Output/result_tower_output.csv")
-        # pacsv.write_csv(result_v_ohl, "Data/Output/result_v_ohl_output.csv")
-        # pacsv.write_csv(result_i_ohl, "Data/Output/result_i_ohl_output.csv")
-        pacsv.write_csv(sources_pa, "Data/Output/result_lightning.csv")
 
 
-        return measure_result
+
+        return measure_result,result_tower,sources_pa
         # result_tower.to_csv("Data/Output/result_tower_output.csv")
         # result_v_ohl.to_csv("Data/Output/result_v_ohl_output.csv")
         # result_i_ohl.to_csv("Data/Output/result_i_ohl_output.csv")
@@ -827,7 +824,7 @@ class Network:
         return measure_result
 
     # 运行一次的灵敏度分析
-    def sensitive_analysis(self, load_dict):
+    def sensitive_analysis(self, load_dict,path):
         # 检查是否使用 hybrid 模式
         use_hybrid = load_dict.get("Global", {}).get("Hybrid_method", 0) == 1
 
@@ -850,7 +847,7 @@ class Network:
         sa_dict = load_dict["Sensitivity_analysis"]
         mode = sa_dict.get("mode", 1)
 
-        result_before, result_after = run_sensitivity_analysis(self, load_dict, sa_dict, use_hybrid, mode)
+        result_before, result_after = run_sensitivity_analysis(self, load_dict, sa_dict, use_hybrid, mode,path)
         return result_before, result_after
 
     # 运行多次的灵敏度分析

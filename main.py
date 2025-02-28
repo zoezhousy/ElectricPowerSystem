@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from Model import Strategy
 from Model.Network import Network
+import pyarrow.csv as pacsv
 
 
 def show_result(data_dict, save_path):
@@ -39,10 +40,13 @@ def run_base_calculation(network, load_dict, save_path):
     :param load_dict: 加载的JSON数据
     :param save_path: 结果保存路径
     """
-    result = network.run_base(load_dict)
+    result,tower_result,source_result = network.run_base(load_dict)
     df_measure = pd.DataFrame(result)
-    df_measure.to_csv(f'{save_path}result.csv', index=False, header=True)
-    show_result(df_measure, save_path)
+    df_measure.to_csv(f'{save_path}base_measure/result.csv', index=False, header=True)
+    pacsv.write_csv(tower_result, f'{save_path}base_measure/result_tower_output.csv')
+    pacsv.write_csv(source_result, f'{save_path}base_measure/result_lightning.csv')
+    #show_result(df_measure, save_path)
+    print(f'基本模块计算结束，结果保存在{save_path}base_measure/目录中')
 
 
 def run_sensitivity_analysis(network, load_dict, save_path):
@@ -70,35 +74,32 @@ def run_sensitivity_analysis(network, load_dict, save_path):
         print(FO_matrix)
     # 单次计算，单个参数改变
     elif mode == 1:
-        result_before, results_after = network.sensitive_analysis(load_dict)
+        result_before, results_after = network.sensitive_analysis(load_dict,save_path+'sensitive/')
         if results_after:
             for param_type, result in results_after.items():
-                df_after = pd.DataFrame(
-                    result if network.global_set(load_dict).get("Hybrid_method", 0) == 1 else result[0])
-                df_after.to_csv(f'{save_path}{param_type.lower()}_modified.csv')
+                df_after = pd.DataFrame(result)
+                df_after.to_csv(f'{save_path}sensitive/{param_type.lower()}_modified.csv')
 
     # 单次计算，多个参数改变
     elif mode == 2:
-        result_before, result_after = network.sensitive_analysis(load_dict)
+        result_before, result_after = network.sensitive_analysis(load_dict,save_path+'sensitive/')
         if result_after:
-            pd.DataFrame(
-                result_after if network.global_set(load_dict).get("Hybrid_method", 0) == 1 else result_after[0]).to_csv(
-                f'{save_path}combined_modified.csv')
+            pd.DataFrame(result_after )
             print(f"  Combined: {result_after}")
-            show_result(result_after, path)
+            show_result(result_after, save_path+'sensitive')
     # 多次计算，多个参数改变
     elif mode == 3:
-        result_before, results_after = network.sensitive_analysis(load_dict)
+        result_before, results_after = network.sensitive_analysis(load_dict,save_path+'sensitive/')
         if results_after:
             for param_type, result in results_after.items():
                 df_after = pd.DataFrame(
                     result if network.global_set(load_dict).get("Hybrid_method", 0) == 1 else result[0])
                 # 保存到 save_path 而不是 output_path，与其他模式保持一致
-                df_after.to_csv(f'{save_path}{param_type.lower()}_sequential.csv')
+                df_after.to_csv(f'{save_path}sensitive/{param_type.lower()}_sequential.csv')
                 print(f"  {param_type}: {result}")
                 show_result(result, path)
 
-
+    print(f'灵敏度计算结束，结果保存在{save_path}sensitive/目录中')
 def run_monte_carlo_simulation(network, load_dict, save_path):
     """
     执行蒙特卡洛模拟模块
@@ -106,13 +107,15 @@ def run_monte_carlo_simulation(network, load_dict, save_path):
     :param load_dict: 加载的JSON数据
     :param save_path: 结果保存路径
     """
-    distance = network.Pre_run_MC(load_dict)
+    #distance = network.Pre_run_MC(load_dict)
+    distance = 600  # 预设距离为600，用于方便下一步的计算。
+
     network = Network()
     network.Distance = distance
     result = network.run_MC(load_dict)
     name = "Heidler_perfect_10000_IP100"
     df = pd.DataFrame(result, index=[name])
-    df.to_csv(f'{save_path}summary_values_ins.csv', mode='a')
+    df.to_csv(f'{save_path}mc/summary_values_ins.csv', mode='a')
 
 
 if __name__ == '__main__':

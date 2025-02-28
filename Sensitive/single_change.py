@@ -145,7 +145,7 @@ from Model.Contant import Constant
 
 
 def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
-                             output_path="Data/output/case3_nonlinear/sensitive/"):
+                             output_path):
 
     def rerun_solve(network, sources):
         if use_hybrid:
@@ -293,41 +293,47 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
         for param_type, params in modifications.items():
             print(f"Running single modification for {param_type}")
 
-            empty = all(value is None or value ==[]   for value in params.values())
-            if param_type == "Stroke" and (not empty):
-                modified_sources,sub_change = modify_stroke(network, load_dict, params)
-                result = rerun_solve(network, modified_sources)
-                filename = f"{output_path}stroke_{sub_change}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-            elif param_type == "Soil" and (not empty):
-                modify_soil(network, params)
-                modified_sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
-                result = rerun_solve(network, modified_sources)
-                filename = f"{output_path}soil_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-            elif param_type == "DE" and (not empty):
-                modify_de(network, params)
-                result = rerun_solve(network, sources)
-                filename = f"{output_path}de_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-            elif param_type == "ground"and (not empty):
-                modify_ground(network, params)
-                modified_sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
-                result = rerun_solve(network, modified_sources)
-                filename = f"{output_path}ground_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-            else:
-                if param_type == "Arrester"and (not empty):
-                    modify_arrester(network, params)
-                    result = rerun_full(network, load_dict)
-                    filename = f"{output_path}{param_type.lower()}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-                elif param_type == "SW" and (not empty):
-                    modify_sw(network, params)
-                    result = rerun_full(network, load_dict)
-                    filename = f"{output_path}{param_type.lower()}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-                elif param_type == "ROD"and (not empty):
-                    modify_rod(network, params)
-                    result = rerun_full(network, load_dict)
-                    filename = f"{output_path}{param_type.lower()}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-            results_after[param_type]
-        pd.DataFrame(result if use_hybrid else result[0]).to_csv(filename)
-        print(f"Result saved to {filename}")
+            empty = all(value is None or value == [] for value in params.values()) if isinstance(params, dict) \
+                else params is None or params == []
+
+            if not empty:
+                result = {}
+                filename = "unknown"
+                if param_type == "Stroke" :
+                    modified_sources,sub_change = modify_stroke(network, load_dict, params)
+                    result = rerun_solve(network, modified_sources)
+                    filename = f"{output_path}stroke_{sub_change}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
+                    param_type = param_type+"_"+sub_change
+                elif param_type == "Soil":
+                    modify_soil(network, params)
+                    modified_sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
+                    result = rerun_solve(network, modified_sources)
+                    filename = f"{output_path}soil_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
+                elif param_type == "DE" :
+                    modify_de(network, params)
+                    result = rerun_solve(network, sources)
+                    filename = f"{output_path}de_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
+                elif param_type == "ground":
+                    modify_ground(network, params)
+                    modified_sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
+                    result = rerun_solve(network, modified_sources)
+                    filename = f"{output_path}ground_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
+                else:
+                    if param_type == "Arrester":
+                        modify_arrester(network, params)
+                        result = rerun_full(network, load_dict)
+                        filename = f"{output_path}{param_type.lower()}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
+                    elif param_type == "SW" :
+                        modify_sw(network, params)
+                        result = rerun_full(network, load_dict)
+                        filename = f"{output_path}{param_type.lower()}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
+                    elif param_type == "ROD":
+                        modify_rod(network, params)
+                        result = rerun_full(network, load_dict)
+                        filename = f"{output_path}{param_type.lower()}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
+                results_after[param_type] = result
+                pd.DataFrame(result if use_hybrid else result[0]).to_csv(filename)
+                print(f"Result saved to {filename}")
         return result_before, results_after
 
     elif mode == 2:
