@@ -87,18 +87,47 @@ class Tower:
 
 
     def reset_matrix(self):
-        self.incidence_matrix = self.H['incidence_matrix']
+        # 以下是参数矩阵，是Tower建模最终输出的参数
+        # 邻接矩阵
+        self.wires_name = []
+        wires_num = self.wires.count()
+        Nodes_num = self.wires.count_distinct_points()
+        ag_wires_num = self.wires.count_airWires() + self.wires.count_gndWires()
+        self.incidence_matrix = np.zeros((wires_num, Nodes_num))
         # 电阻矩阵
-        self.resistance_matrix = self.H['resistance_matrix']
+        self.resistance_matrix = np.zeros((ag_wires_num, ag_wires_num))
         # 电感矩阵
-        self.inductance_matrix = self.H['inductance_matrix']
+        self.inductance_matrix = np.zeros((ag_wires_num, ag_wires_num))
         # 电位矩阵
-        self.potential_matrix = self.H['potential_matrix']
+        self.potential_matrix = np.zeros((Nodes_num, Nodes_num))
         # 电容矩阵
-        self.capacitance_matrix = self.H['capacitance_matrix']
+        self.capacitance_matrix = np.zeros((Nodes_num, Nodes_num))
         # 电导矩阵
-        self.conductance_matrix = self.H['conductance_matrix']
-        self.wires_name = self.H['wires_name']
+        self.conductance_matrix = np.zeros((Nodes_num, Nodes_num))
+        # 阻抗矩阵
+        self.impedance_matrix = np.array([])
+        # 电压矩阵
+        self.voltage_source_matrix = pd.DataFrame()
+        # 电流矩阵
+        self.current_source_matrix = pd.DataFrame()
+        # vector fitting 相关参数
+        self.A = np.array([])
+        self.B = np.array([])
+        self.phi = np.array([])
+
+    # def reset_matrix(self):
+    #     self.incidence_matrix = self.H['incidence_matrix']
+    #     # 电阻矩阵
+    #     self.resistance_matrix = self.H['resistance_matrix']
+    #     # 电感矩阵
+    #     self.inductance_matrix = self.H['inductance_matrix']
+    #     # 电位矩阵
+    #     self.potential_matrix = self.H['potential_matrix']
+    #     # 电容矩阵
+    #     self.capacitance_matrix = self.H['capacitance_matrix']
+    #     # 电导矩阵
+    #     self.conductance_matrix = self.H['conductance_matrix']
+    #     self.wires_name = self.H['wires_name']
 
     def initialize_incidence_matrix(self):
         """

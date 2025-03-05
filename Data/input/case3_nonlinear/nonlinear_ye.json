@@ -15410,37 +15410,24 @@
       "ionisation_model": ""
     },
     "GPU_calculation": 1,
-    "Calculation_Model": 2,
+    "Calculation_Model": 1,
     "Hybrid_method": 1
   },
   "Sensitivity_analysis":{
     "mode": 1,
-    "Stroke": {
-      "position": null,
-      "area": null,
-      "wire": null,
-      "cir_id": null,
-      "phase": null,
-      "waveform": [],
-      "paramenters": []
-    },
-    "Soil": [],
-    "Arrester": {
-      "name": null
-    },
-    "SW": {
-      "name": null
+    "Stroke_position": [
+      {
+        "type": "Direct",
+        "position": [1000,0,10],
+        "area": "tower_18",
+        "wire": "Y01_Tower_18"
+       },
+      {
+        "type": "Indirect",
+        "position": [500,5000,0]
+       }
+    ]
 
-    },
-    "ROD": {
-      "tower": null,
-      "lump": null,
-      "r": null,
-      "l": null
-
-    },
-    "DE": 1750000,
-    "ground": null
 
   },
   "MC": {

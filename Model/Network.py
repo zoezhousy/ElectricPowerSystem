@@ -7,6 +7,7 @@ import os
 import numpy as np
 import pandas as pd
 from functools import reduce
+from Model.Node import Node
 from itertools import chain
 import copy
 import pyarrow as pa
@@ -103,6 +104,8 @@ class Network:
         self.Distance = 0
         self.MC_flash = []
         self.weak_point = {}
+        self.sensitive_target = {}
+        self.global_ground= {}
 
     # 记录电网元素之间的关系
     def tower_branches(self, branches):
@@ -270,7 +273,7 @@ class Network:
         if 'Source' in load_dict and "Lightning" in load_dict['Source']:
             light = load_dict["Source"]["Lightning"]
             lightning = initial_lightning(light, dt=self.dt)
-
+            self.lightning = lightning
             if light["area"].split("_")[0] == "OHL":
                 bran = None
                 cir_id = light["cir_id"]
@@ -290,6 +293,14 @@ class Network:
                                                                  branches, constants, share_dict)
                 sources = self.add_lump(U_out, I_out)
                 return sources
+            if light["area"].split("_")[0] == "Ground":
+                U_out, I_out, share_dict = self.source_calculate(lightning,
+                                                                 light["area"], light["wire"], light["position"], nodes,
+                                                                 branches, constants, share_dict)
+                sources = self.add_lump(U_out, I_out)
+                return sources
+
+
         else:
             U_out = pd.DataFrame()
             I_out = pd.DataFrame()
@@ -368,6 +379,7 @@ class Network:
         U_out = pd.DataFrame()
         I_out = pd.DataFrame()
         if lightning.type == "Indirect":
+            closet_node = self.closest_node( area, wire, position)
             for i in range(len(lightning.strokes)):
 
                 Er_lossy = 0
@@ -396,10 +408,11 @@ class Network:
                 U_out = pd.concat([U_out, new_U], axis=1, ignore_index=True)
                 I_out = pd.concat(
                     [I_out,
-                     LightningCurrent_calculate(area, wire, position, self, nodes, lightning, stroke_sequence=i)],
+                     LightningCurrent_calculate_indirect(nodes, lightning, stroke_sequence=i)],
                     axis=1, ignore_index=True)
         if lightning.type == "Direct":
             closet_node = self.closest_node(area, wire, position)
+            lightning.closet_node = closet_node
             for i in range(len(lightning.strokes)):
                 new_U = InducedVoltage_calculate_direct(branches, lightning, i)
                 U_out = pd.concat([U_out, new_U], axis=1, ignore_index=True)
@@ -754,9 +767,7 @@ class Network:
         tower_matrix = self.tower_individual_matrix()  # 合并tower矩阵
         line_matrix = self.line_individual_matrix() # 合并cable和OHL矩阵
 
-        # tower_branches, tower_nodes, tower_or_lump_nodes, tower_and_line_nodes = self.nodes_of_hybrid_mode()
         branches, nodes = self.calculate_branches(self.max_length)
-        # nodes = self.capacitance_matrix.columns.tolist()
 
         # 3. 初始化源，计算结果
         share_dict = {}
@@ -769,8 +780,6 @@ class Network:
         self.broken = list(set(broken_arrestor_list))
         measure_result = self.run_measure(result_tower)
         result_tower = pa.Table.from_pandas(result_tower.T)
-        # result_v_ohl = pa.Table.from_pandas(result_v_ohl.T)
-        # result_i_ohl = pa.Table.from_pandas(result_i_ohl.T)
         sources_pa = pa.Table.from_pandas(self.sources.T)
 
 
@@ -1020,14 +1029,17 @@ class Network:
         area = p1.split("_")[0]
         # 1. 找到用户指定点所在的wire
         selected_wire = None
+        target_tower = None
         nodes = set()
         if area == "tower":
             selected_tower = [tower for tower in self.towers if tower.info.name == p1]
+            target_tower = selected_tower[0].name
             selected_wire = [wire for wire in list(selected_tower[0].wires.get_all_wires().values()) if
                              wire.name.split("_")[0] == p2.split("_")[0]]
 
         elif area == "OHL":
             selected_ohl = [ohl for ohl in self.OHLs if ohl.name == p1]
+            target_tower = [selected_ohl[0].info.HeadTower,selected_ohl[0].info.TailTower]
             selected_wire = [wire for wire in list(selected_ohl[0].wires.get_all_wires().values()) if
                              wire.name.split("_")[0] == p2.split("_")[0]]
             #all_node = [wire for wire in list(selected_ohl[0].wires.get_all_nodes())]
@@ -1036,6 +1048,14 @@ class Network:
             selected_cable = [cable for cable in self.cables if cable.name == p1]
             selected_wire = [wire for wire in list(selected_cable[0].wires.get_all_wires().values()) if
                              wire.name.split("_")[0] == p2]
+
+        elif area == "Ground":
+            dis = {tower.info.name:distance(tower.info.position,position) for tower in self.towers}
+            close_tower = [k for k, v in sorted(dis.items(), key=lambda x: x[1])][:int(len(dis) * 0.1)]
+            node = Node(None,0,0,0)
+            node.target_tower = close_tower
+            return node
+
         # 2. 找到用户指定点距离该wire上最近的node
 
         for wire in selected_wire:
@@ -1051,6 +1071,7 @@ class Network:
             if dist < min_distance:
                 min_distance = dist
                 closest_point = node
+        closest_point.target_tower = target_tower
         return closest_point
 
     def run_measure(self,solution):
