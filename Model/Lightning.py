@@ -160,6 +160,7 @@ class Lightning:
         self.strokes = strokes or []
         self.stroke_number = len(self.strokes)
         self.channel = channel
+        self.closet_node = None
 
 
     def add_stroke(self, stroke: Stroke):

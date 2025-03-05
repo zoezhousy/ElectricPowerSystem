@@ -7,11 +7,13 @@ class Devices:
         self.arrestors_node1 = []
         self.arrestors_node2 = []
 
-    def add_insolator(self, insolator):
+
+    def add_insulator(self, insulator):
         """
         添加绝缘子
         """
-        self.insulators.append(insolator)
+        self.insulators.append(insulator)
+
 
     def add_arrestor(self, arrestor, bran, node1, node2):
         """
