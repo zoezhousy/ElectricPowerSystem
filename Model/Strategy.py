@@ -895,7 +895,8 @@ class hybrid_nonlinear(Hybrid_Strategy):
         # result_i_ohl = pd.DataFrame(Iout_ohl, index=index_o, columns=np.arange(Nt) + 0.5)
         result_i_ohl = pd.DataFrame(Iout_ohl, index=index_o, columns=np.arange(Nt))
         results = pd.concat([results_tower, result_v_ohl])
-        results.drop_duplicates(inplace=True)
+        #drop_duplicates(inplace=True)
+        results = results.groupby(results.index).mean()
         results = results.add(result_i_ohl, fill_value=0).fillna(0)
         others = {'SDEM': damaged_SDEM,'NLR':damaged_NLR}
         return results, others

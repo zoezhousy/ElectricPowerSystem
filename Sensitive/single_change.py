@@ -377,43 +377,22 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                 filename = "unknown"
                 if param_type == "Stroke_position" :
                     filename_current = f"{output_path}stroke_position_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-                    merged_df = pd.DataFrame()
                     swhs_node = {}
+                    merged_df = pd.DataFrame()
+
                     for value in params:
-                        merged_df = pd.DataFrame()
+
                         load_dict = modify_stroke_position(load_dict, value)
                         network.sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
                         target_tower = network.lightning.closet_node.target_tower
-                        if value['type'] == "Direct":
+                        for tower in network.towers:
+                            if tower.name in target_tower:
+                                swhs_node = {tower.name+"_"+swh.name: [swh.name, swh.node1[0], swh.node2[0]] for ins in
+                                             tower.devices.insulators for swh in
+                                             ins.switch_disruptive_effect_models}
 
-                            for tower in network.towers:
-                                if tower.name in target_tower:
-                                    swhs_node = {tower.name: [swh.name, swh.node1[0], swh.node2[0]] for ins in
-                                                 tower.devices.insulators for swh in
-                                                 ins.switch_disruptive_effect_models}
-                        else:
-
-                            swhs_node = {tower.name: [swh.name, swh.node1[0], swh.node2[0]] for tower in target_tower for ins
-                                         in tower.devices.insulators for swh in ins.switch_disruptive_effect_models}
-
-                        # 计算电压和电流
-                        U_out = pd.DataFrame()
-                        I_out = pd.DataFrame()
-                        for j in range(len(network.lightning.strokes)):
-                            new_U = InducedVoltage_calculate_direct(branches, network.lightning, j)
-                            U_out = pd.concat([U_out, new_U], axis=1, ignore_index=True)
-                            I_out = pd.concat([I_out,
-                                               LightningCurrent_calculate_direct(network.lightning.closet_node,
-                                                                                 nodes, network.lightning,
-                                                                                 stroke_sequence=j)],
-                                              axis=1, ignore_index=True)
-
-                        # 添加源并计算
-                        sources = network.add_lump(U_out, I_out)
-                        # 添加源并计算
-                        sources = network.add_lump(U_out, I_out)
                         result_tower, other = network.calculate_of_hybrid_mode(line_matrix, tower_matrix,
-                                                                               sources,
+                                                                               network.sources,
                                                                                network.Nt, network.dt,
                                                                                network.GPU_calculation)
                         df_result = pd.DataFrame(

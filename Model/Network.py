@@ -380,6 +380,7 @@ class Network:
         I_out = pd.DataFrame()
         if lightning.type == "Indirect":
             closet_node = self.closest_node( area, wire, position)
+            lightning.closet_node = closet_node
             for i in range(len(lightning.strokes)):
 
                 Er_lossy = 0
