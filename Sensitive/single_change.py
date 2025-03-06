@@ -146,6 +146,7 @@ import itertools
 import numpy as np
 from Driver.modeling.tower_modeling import tower_building, tower_building_variant_frequency, tower_building_with_tube, \
     tower_building_variant_frequency_with_tube
+from Driver.modeling.OHL_modeling import OHL_building
 from Model.Lightning import Stroke,Channel,Lightning
 from Function.Calculators.InducedVoltage_calculate import InducedVoltage_calculate_direct,LightningCurrent_calculate_direct
 
@@ -186,11 +187,65 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
 
         return load_dict
 
-    def modify_soil(network, params):
-        if params:
-            print(f"Modifying soil parameters: {params}")
-            network.sig = params
+    def modify_soil_sig(network, value):
+        if value:
+            print(f"Modifying soil parameters: {value}")
+            network.sig = value
+            for tower in network.towers:
+                swhs_node = [[swh.name, swh.node1[0], swh.node2[0]] for ins in
+                             tower.devices.insulators for swh in ins.switch_disruptive_effect_models]
+                tower.reset_matrix()
+                if network.global_ground == 1:
+                    network.ground.sig = value
+                    gnd = network.ground
+                else:
+                    tower.ground.sig = value
+                    gnd = network.ground
 
+                tower_building(tower, gnd)
+
+            for ohl in network.OHLs:
+                ohl.reset_matrix()
+                if network.global_ground == 1:
+                    network.ground.sig = value
+                    gnd = network.ground
+                else:
+                    ohl.ground.sig = value
+                    gnd = network.ground
+
+                OHL_building(ohl, network.max_length, gnd, network.fixed_frequency)
+
+            network.sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
+            return swhs_node
+    def modify_soil_epr(network, value):
+        print(f"Modifying soil epr parameters: {value}")
+        network.epr = value
+        for tower in network.towers:
+            swhs_node = [[swh.name, swh.node1[0], swh.node2[0]] for ins in
+                         tower.devices.insulators for swh in ins.switch_disruptive_effect_models]
+            tower.reset_matrix()
+            if network.global_ground == 1:
+                network.ground.epr = value
+                gnd = network.ground
+            else:
+                tower.ground.epr = value
+                gnd = network.ground
+
+            tower_building(tower, gnd)
+
+        for ohl in network.OHLs:
+            ohl.reset_matrix()
+            if network.global_ground == 1:
+                network.ground.epr = value
+                gnd = network.ground
+            else:
+                ohl.ground.epr = value
+                gnd = network.ground
+
+            OHL_building(ohl, network.max_length, gnd, network.fixed_frequency)
+
+        network.sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
+        return swhs_node
     def modify_arrester(network, params):
         if params.get("name") is not None:
             arrester_name = params["name"]
@@ -301,8 +356,8 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                     for swh in ins.switch_disruptive_effect_models:
                         swh.parameters["DE_max"] = params
 
-    def modify_para_set(self):
-        stroke1.parameters[0] = selected_amplitudes * 1000
+    # def modify_para_set(stroke1,selected_amplitudes):
+    #     stroke1.parameters[0] = selected_amplitudes * 1000
 
     def modify_para_set(selected_parameter,closet_node):
 
@@ -335,6 +390,25 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                 if "epr" in params:
                     network.epr = params["epr"]
 
+    def calculate(network,result,FO,swhs_node):
+        tower_matrix = network.tower_individual_matrix()  # 合并tower矩阵
+        line_matrix = network.line_individual_matrix()  # 合并cable和OHL矩阵
+
+        branches, nodes = network.calculate_branches(network.max_length)
+        result_tower, other = network.calculate_of_hybrid_mode(line_matrix,
+                                                               tower_matrix,
+                                                               network.sources,
+                                                               network.Nt, network.dt,
+                                                               network.GPU_calculation)
+        df_result = pd.DataFrame(
+            {name + "_" + str(value): abs(
+                result_tower.loc[idx1] - result_tower.loc[idx2])
+                for name, idx1, idx2 in swhs_node}
+        ).T
+        FO_result = other["SDEM"]
+        result = pd.concat([result, df_result], axis=0)
+        return result,FO_result
+
     """根据参数类型和运行模式执行敏感性分析，返回修改前和修改后结果"""
     os.makedirs(output_path, exist_ok=True)
 
@@ -353,18 +427,28 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
     share_dict = {}
     network.sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
 
-    # 计算修改前的结果
-    result_tower , other = network.calculate_of_hybrid_mode(line_matrix, tower_matrix, network.sources, network.Nt, network.dt, network.GPU_calculation)
-    result_before = network.run_measure(result_tower)
-    pd.DataFrame(result_before if use_hybrid else result_before[0]).to_csv(
-        f"{output_path}before_modified_{'hybrid' if use_hybrid else 'base'}_output.csv")
-    print(
-        f"Result before modification saved to {output_path}before_modified_{'hybrid' if use_hybrid else 'base'}_output.csv")
+    # # 计算修改前的结果
+    # result_tower , other = network.calculate_of_hybrid_mode(line_matrix, tower_matrix, network.sources, network.Nt, network.dt, network.GPU_calculation)
+    # result_before = network.run_measure(result_tower)
+    # pd.DataFrame(result_before if use_hybrid else result_before[0]).to_csv(
+    #     f"{output_path}before_modified_{'hybrid' if use_hybrid else 'base'}_output.csv")
+    # print(
+    #     f"Result before modification saved to {output_path}before_modified_{'hybrid' if use_hybrid else 'base'}_output.csv")
 
-    param_types = ["Stroke_para_set","Stroke_amplitude","Stroke_position", "Soil", "Arrester", "SW", "ROD", "DE", "ground"]
-    modifications = {key: sa_dict.get(key) for key in param_types if sa_dict.get(key) not in [None, [], {}]}
-
-    if mode == 1:
+    param_types = ["Stroke_para_set","Stroke_amplitude","Stroke_position", "Soil_sig","Soil_epr", "Arrester", "SW", "ROD", "DE", "ground"]
+    #modifications = {key: sa_dict.get(key) for key in param_types if sa_dict.get(key) not in [None, [], {}]}
+    # 连续变量/不连续变量
+    modifications = {
+        key: (
+            [i
+             for i in range(sa_dict.get(key)[0],sa_dict.get(key)[1],sa_dict.get(key)[2]) ]
+            if sa_dict.get("continue") == 1 and key != 'continue'
+            else sa_dict.get(key)
+        )
+        for key in param_types
+        if sa_dict.get(key) not in [None, [], {}] and key != 'continue'
+    }
+    if mode == 1 or mode ==3:
         results_after = {}
         for param_type, params in modifications.items():
             print(f"Running single modification for {param_type}")
@@ -473,9 +557,26 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                         merged_df = pd.concat([merged_df, df_result], axis=0)  # 垂直拼接（行堆叠）
                     pd.DataFrame(merged_df).to_csv(filename_current)
 
-                elif param_type == "Soil":
-                    modify_soil(network, params)
-                    network.sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
+                elif param_type == "Soil_sig":
+                    filename_voltage = f"{output_path}sig_modified_{'hybrid' if use_hybrid else 'base'}_volatage_output.csv"
+                    merged_df = pd.DataFrame()
+                    FO_all = pd.DataFrame()
+                    for value in params:
+                        swhs_node = modify_soil_sig(network, value)
+                        merged_df,FO_all = calculate(network,merged_df,FO_all,swhs_node)
+                    pd.DataFrame(merged_df).to_csv(filename_voltage)
+                elif param_type == "Soil_epr":
+                    filename_voltage = f"{output_path}epr_modified_{'hybrid' if use_hybrid else 'base'}_volatage_output.csv"
+
+                    merged_df = pd.DataFrame()
+
+
+                    for value in params:
+                        swhs_node = modify_soil_epr(network, value)
+                        merged_df = calculate(network,merged_df,swhs_node)
+                    pd.DataFrame(merged_df).to_csv(filename_voltage)
+
+
                     filename = f"{output_path}soil_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
                 elif param_type == "DE" :
                     if isinstance(params, list):
@@ -492,6 +593,7 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                             #      for name, idx1, idx2 in swhs_node}
                             # ).T
                             modify_de(network, value)
+
                             result_tower, other = network.calculate_of_hybrid_mode(line_matrix, tower_matrix,
                                                                                    network.sources,
                                                                                    network.Nt, network.dt,
@@ -544,35 +646,16 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                                             rod.parameters['resistance'] = value
                                             gnd = network.ground if network.global_ground == 1 else tower.ground
                                             tower_building(tower, gnd)
-                                            tower_matrix = network.tower_individual_matrix()  # 合并tower矩阵
-                                            line_matrix = network.line_individual_matrix()  # 合并cable和OHL矩阵
-
-                                            branches, nodes = network.calculate_branches(network.max_length)
-                                            result_tower, other = network.calculate_of_hybrid_mode(line_matrix,
-                                                                                                tower_matrix,
-                                                                                                network.sources,
-                                                                                                network.Nt, network.dt,
-                                                                                                network.GPU_calculation)
-                                            df_result = pd.DataFrame(
-                                                {name + "_" + str(value): abs(
-                                                    result_tower.loc[idx1] - result_tower.loc[idx2])
-                                                 for name, idx1, idx2 in swhs_node}
-                                            ).T
-                                            merged_df = pd.concat([merged_df, df_result], axis=0)
+                                            merged_df,FO_all = calculate(network, merged_df,FO_all,swhs_node)
                         pd.DataFrame(merged_df).to_csv(filename_voltage)
 
 
 
-                        modify_rod(network, params)
+                        #modify_rod(network, params)
                         result = rerun_full(network, load_dict)
                         filename = f"{output_path}{param_type.lower()}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-                result_tower, other = network.calculate_of_hybrid_mode(line_matrix, tower_matrix, network.sources,
-                                                                       network.Nt, network.dt, network.GPU_calculation)
 
-                results_after[param_type] = result
-                pd.DataFrame(result if use_hybrid else result[0]).to_csv(filename)
-                print(f"Result saved to {filename}")
-        return result_before, results_after
+        return None, results_after
 
     elif mode == 2:
         print("Running simultaneous modifications with combinations")
@@ -584,8 +667,8 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
             if param_type == "Stroke_position":
                 param_values["Stroke_position"] = params if isinstance(params, dict) else [params]
 
-            elif param_type == "Soil":
-                param_values["Soil"] = params if isinstance(params, list) else [params]
+            elif param_type == "Soil_sig":
+                param_values["Soil_sig"] = params if isinstance(params, list) else [params]
             elif param_type == "Arrester":
                 if params.get("name") is not None:
                     param_values["Arrester"] = params["name"] if isinstance(params["name"], list) else [params["name"]]
@@ -601,7 +684,7 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
             elif param_type == "ROD":
                 rs = params.get("r", [None]) if isinstance(params.get("r"), list) else [params.get("r")]
                 ls = params.get("l", [None]) if isinstance(params.get("l"), list) else [params.get("l")]
-                param_values["ROD"] = [{"tower": params["tower"], "r": r, "l": l} for r, l in itertools.product(rs, ls)]
+                param_values["ROD"] = params if isinstance(params, list) else [params]
             elif param_type == "DE":
                 param_values["DE"] = params if isinstance(params, list) else [params]
             elif param_type == "ground":
@@ -610,112 +693,62 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
         # 生成所有参数值的组合
         param_combinations = list(itertools.product(*param_values.values()))
         param_keys = list(param_values.keys())
+        filename_voltage = f"{output_path}combination_iii_{'hybrid' if use_hybrid else 'base'}_volatage_output.csv"
+        filename_FO = f"{output_path}combination_iii_{'hybrid' if use_hybrid else 'base'}_FO_output.csv"
 
+        swhs_node = {}
+        merged_df = pd.DataFrame()
+        FO_all = {}
         for combo in param_combinations:
             combo_dict = dict(zip(param_keys, combo))
             combo_key = "_".join(
                 f"{k}_{v if not isinstance(v, dict) else '_'.join(f'{kk}_{vv}' for kk, vv in v.items() if vv is not None)}"
                 for k, v in combo_dict.items() if v is not None)
-
-            # 重置网络状态
-           # network.initialize_network(load_dict, network.VF)
-           #  if use_hybrid:
-           #      network.H = {"Line": line_matrix, "Tower": tower_matrix}
-           #  else:
-           #      network.combine_parameter_matrix()
-           #  sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
-
-            # 应用所有参数修改
-            modified_sources = network.sources
+            FO = pd.DataFrame({combo_key: []})
             for param_type, value in combo_dict.items():
                 if value is not None:
-                    if param_type == "Stroke":
+                    if param_type == "Stroke_position":
                         load_dict = modify_stroke_position(load_dict,value)
-                    elif param_type == "Soil":
-                        modify_soil(network,  value)
+                    elif param_type == "Soil_sig":
+                        swhs_node = modify_soil_sig(network,  value)
                     elif param_type == "Arrester":
                         if isinstance(value, int):
                             modify_arrester_distance(network,  value)
                     elif param_type == "SW":
                         modify_sw(network,  value)
                     elif param_type == "ROD":
-                        modify_rod(network, value)
+                        filename_voltage = f"{output_path}ROD_modified_{'hybrid' if use_hybrid else 'base'}_volatage_output.csv"
+                        filename_FO = f"{output_path}ROD_modified_{'hybrid' if use_hybrid else 'base'}_FO_output.csv"
+
+                        target_tower = value["tower"]
+                        lump_name = value["lump"]
+                        merged_df = pd.DataFrame()
+                        for tower in network.towers:
+                            if tower.name == target_tower:
+
+                                swhs_node = [[swh.name, swh.node1[0], swh.node2[0]] for ins in
+                                             tower.devices.insulators for swh in ins.switch_disruptive_effect_models]
+                                for rod in tower.lump.RODs:
+                                    if rod.name == lump_name:
+                                        for v in value['r']:
+                                            tower.reset_matrix()
+                                            rod.parameters['resistance'] = v
+                                            gnd = network.ground if network.global_ground == 1 else tower.ground
+                                            tower_building(tower, gnd)
+                                            merged_df, FO = calculate(network, merged_df, FO, swhs_node)
+                        pd.DataFrame(merged_df).to_csv(filename_voltage)
+
                     elif param_type == "DE":
                         modify_de(network,  value)
                     elif param_type == "ground":
                         modify_ground(network,  value)
                         modified_sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
 
-            # 运行模拟
-            if any(param_type in ["Arrester", "SW", "ROD"] for param_type in modifications):
-                tower_matrix = network.tower_individual_matrix()  # 合并tower矩阵
-                line_matrix = network.line_individual_matrix()  # 合并cable和OHL矩阵
-                branches, nodes = network.calculate_branches(network.max_length)
-                share_dict = {}
-                constants = Constant()
-                if any(param_type=="Stroke" for param_type in modifications):
-                    network.sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
-                network.H = {"Line": line_matrix, "Tower": tower_matrix}
-                result_tower, other = network.calculate_of_hybrid_mode(line_matrix, tower_matrix, network.sources,
-                                                                       network.Nt,
-                                                                       network.dt, network.GPU_calculation)
+            merged_df,FO = calculate(network, merged_df,FO,swhs_node)
+            FO_all[combo_key] = FO
+        pd.DataFrame(merged_df).to_csv(filename_voltage)
+        pd.DataFrame(FO_all).to_csv(filename_FO)
+        print(f"Result saved to {filename_voltage}")
 
-                result_key = "_".join(f"{k}_{v}" for k, v in combo_dict.items())
-                results_after[result_key] = result_tower
-                results_after[result_key+"_FO"] = other["SDEM"]
-                results_after[result_key+"_broken"] = other["NLR"]
-            else:
-                network.sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
-                network.H = {"Line": line_matrix, "Tower": tower_matrix}
-                result_tower, other = network.calculate_of_hybrid_mode(line_matrix, tower_matrix, network.sources,
-                                                                       network.Nt,
-                                                                       network.dt, network.GPU_calculation)
+        return None, results_after
 
-                result_key = "_".join(f"{k}_{v}" for k, v in combo_dict.items())
-                results_after[result_key] = result_tower
-                results_after[result_key+"_FO"] = other["SDEM"]
-                results_after[result_key+"_broken"] = other["NLR"]
-
-            filename = f"{output_path}combined_{combo_key}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-            pd.DataFrame(results_after).to_csv(filename)
-            print(f"Result saved to {filename}")
-
-        return result_before, results_after
-
-    elif mode == 3:
-        print("Running sequential modifications")
-        current_sources = network.sources
-        results_after = {}
-        for param_type, params in modifications.items():
-            print(f"Modifying {param_type}")
-            if param_type == "Stroke":
-                current_sources = modify_stroke(network, load_dict, params)
-                result = rerun_solve(network, current_sources)
-            elif param_type == "Soil":
-                modify_soil(network, params)
-                current_sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
-                result = rerun_solve(network, current_sources)
-            elif param_type == "DE":
-                modify_de(network, params)
-                result = rerun_solve(network, current_sources)
-            elif param_type == "ground":
-                modify_ground(network, params)
-                current_sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
-                result = rerun_solve(network, current_sources)
-            else:
-                if param_type == "Arrester":
-                    modify_arrester(network, params)
-                elif param_type == "SW":
-                    modify_sw(network, params)
-                elif param_type == "ROD":
-                    modify_rod(network, params)
-                result = rerun_full(network, load_dict)
-
-            filename = f"{output_path}{param_type.lower()}_sequential_{'hybrid' if use_hybrid else 'base'}_output.csv"
-            pd.DataFrame(result if use_hybrid else result[0]).to_csv(filename)
-            print(f"Result after modifying {param_type} saved to {filename}")
-            results_after[param_type] = result
-
-        return result_before, results_after
-
-    return result_before, None

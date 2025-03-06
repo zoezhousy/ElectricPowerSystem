@@ -15414,20 +15414,14 @@
     "Hybrid_method": 1
   },
   "Sensitivity_analysis":{
-    "mode": 1,
-    "Stroke_position": [
-      {
-        "type": "Direct",
-        "position": [1000,0,10],
-        "area": "tower_18",
-        "wire": "Y01_Tower_18"
-       },
-      {
-        "type": "Indirect",
-        "position": [500,50,0]
-       }
-    ]
-
+    "mode": 2,
+    "continue": 0,
+    "DE": [75,125,175],
+    "ROD": {
+      "tower": "tower_17",
+      "lump": "GRID1",
+      "r": [10,20,30]
+    }
 
   },
   "MC": {

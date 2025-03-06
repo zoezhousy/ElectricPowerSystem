@@ -49,6 +49,31 @@ class OHL:
         self.B = np.array([])
         self.phi = np.array([])
 
+    def reset_matrix(self):
+        self.wires_name = []
+        self.nodes_name = []
+        # 以下是参数矩阵，是OHL建模最终输出的参数
+        # 邻接矩阵 (pandas.Dataframe,self.wires_name*self.nodes_name)
+        self.incidence_matrix = None
+        # 电阻矩阵 (pandas.Dataframe,self.wires_name*self.wires_name)
+        self.resistance_matrix = None
+        # 电感矩阵 (pandas.Dataframe,self.wires_name*self.wires_name)
+        self.inductance_matrix = None
+        # 电容矩阵 (pandas.Dataframe,self.nodes_name*self.nodes_name)
+        self.capacitance_matrix = None
+        # 电导矩阵 (pandas.Dataframe,self.nodes_name*self.nodes_name)
+        self.conductance_matrix = None
+        # 阻抗矩阵
+        self.impedance_matrix = np.array([])
+        # 电压矩阵
+        self.voltage_source_matrix = pd.DataFrame()
+        # 电流矩阵
+        self.current_source_matrix = pd.DataFrame()
+        # vector fitting 相关参数
+        self.A = np.array([])
+        self.B = np.array([])
+        self.phi = np.array([])
+
     def get_brans_nodes_splited_list(self, segment_num):
         """
         【函数功能】 获取切分后支路列表与节点列表
