@@ -103,6 +103,7 @@ def run_sensitivity_analysis(network_obj, load_dict_data, save_path):
                 show_result(result, path)
 
     print(f'灵敏度计算结束，结果保存在{save_path}sensitive/目录中')
+
 def run_monte_carlo_simulation(network, load_dict, save_path):
     """
     执行蒙特卡洛模拟模块
@@ -123,9 +124,11 @@ def run_monte_carlo_simulation(network, load_dict, save_path):
 
 if __name__ == '__main__':
     # 配置路径和文件名
-    #path = "Data/input/case3_nonlinear/"
-    path = "Data/input/case2_linear/"
-    file_name = "BaseModuletest6_HEXIAO"
+    path = "Data/input/case3_nonlinear/"
+    #path = "Data/input/case2_linear/"
+    #file_name = "BaseModuletest6_HEXIAO"
+    #file_name = "nonlinear_ye"
+    file_name = "Montecarlotest1_HEXIAO1"
     json_file_path = f'{path}{file_name}.json'
 
     # 加载JSON文件

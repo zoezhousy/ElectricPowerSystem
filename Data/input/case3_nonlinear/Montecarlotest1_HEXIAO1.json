@@ -13048,7 +13048,7 @@
       "ionisation_model": ""
     },
     "GPU_calculation": 1,
-    "Calculation_Model": 0,
+    "Calculation_Model": 2,
     "Hybrid_method": 1
   },
   "Sensitivity_analysis":{
@@ -13091,7 +13091,7 @@
       "pn": 10000000,
       "pn2": 1000000,
       "mode": 2,
-      "fixn": 1000,
+      "fixn": 100,
       "Ip1stmin": 5,
       "Ip1stmax": 100,
       "tf1stmin": 0.5,

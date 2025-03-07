@@ -15410,18 +15410,25 @@
       "ionisation_model": ""
     },
     "GPU_calculation": 1,
-    "Calculation_Model": 1,
+    "Calculation_Model": 0,
     "Hybrid_method": 1
   },
   "Sensitivity_analysis":{
-    "mode": 2,
-    "continue": 0,
-    "DE": [75,125,175],
-    "ROD": {
-      "tower": "tower_17",
-      "lump": "GRID1",
-      "r": [10,20,30]
-    }
+    "mode": 1,
+    "Stroke_position": [
+      {
+        "type": "Direct",
+        "position": [1000,0,10],
+        "area": "tower_18",
+        "wire": "Y01_Tower_18"
+       },
+      {
+        "type": "Indirect",
+        "position": [500,5000,0]
+       }
+    ]
+
+
 
   },
   "MC": {
@@ -15431,8 +15438,8 @@
       "Dymax":1500,
       "Dyp":100,
       "pointmd":200,
-      "pn": 10000000,
-      "pn2": 1000000,
+      "pn": 1000,
+      "pn2": 1000,
       "mode": 2,
       "fixn": 1000,
       "Ip1stmin": 5,
@@ -15482,7 +15489,7 @@
       "userInput4d": 1,
       "userInput4ind": 1
     },
-    "Record_SAF": 1
+    "Record_SAF": 0
 
   }
 

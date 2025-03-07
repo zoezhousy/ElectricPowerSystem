@@ -101,6 +101,7 @@ class Network:
         self.broken = {}
         self.arrestor_bran2Tower = {}
         self.FO_Tower = []
+        self.Tower2ins_bran = {}
         self.Distance = 0
         self.MC_flash = []
         self.weak_point = {}
@@ -189,6 +190,7 @@ class Network:
         #                             tower.devices.arrestors}
         # self.FO_Tower = {tower.name: 0 for tower in self.towers}
         for tower in self.towers:
+            self.weak_point[tower.name] = 0
             gnd = self.ground if self.global_ground == 1 else tower.ground
             self.PoleXY[tower.info.name] = tower.info.position[:2]
             self.tower_head_node[tower.info.name] = tower.info.Pole_Head_Node
@@ -214,6 +216,7 @@ class Network:
             self.nolinear_resistors.extend(tower.lump.nolinear_resistors)
             for device_list in [tower.devices.insulators, tower.devices.arrestors, tower.devices.transformers]:
                 for device in device_list:
+                    self.Tower2ins_bran[tower.name] = [bran for swh in device.switch_disruptive_effect_models for bran in swh.bran ]
                     self.switch_disruptive_effect_models.extend(device.switch_disruptive_effect_models)
                     self.voltage_controled_switchs.extend(device.voltage_controled_switchs)
                     self.time_controled_switchs.extend(device.time_controled_switchs)
@@ -780,6 +783,10 @@ class Network:
 
         self.H = {"Line": line_matrix,"Tower": tower_matrix}
         result_tower, other = self.calculate_of_hybrid_mode(line_matrix, tower_matrix, self.sources, self.Nt, self.dt, self.GPU_calculation)
+        #记录哪个塔损坏次数更多
+        fo_tower = [tower for fo_bran in other['SDEM']
+                         for tower, tower_bran in self.Tower2ins_bran.items() if fo_bran in tower_bran ]
+        self.weak_point = {t: self.weak_point.get(t) + (1 if t in fo_tower else 0) for t in list(self.weak_point.keys())}
 
         broken_arrestor_list = [self.arrestor_bran2Tower[bran][1] for bran in other["NLR"] if bran in self.arrestor_bran2Tower.keys()]
         self.broken = list(set(broken_arrestor_list))
@@ -1336,75 +1343,207 @@ class Network:
             MC_result.append((lightning, area, wire, position_xy))
         return MC_result
         #MC_result_list.append(MC_result)
-    def MC_calculate(self,record_SAF,MC_result, nodes, branches):
-        shared_dict = None
-        MC_result_list = []
-        summary = {"nonFO_indirect": 0, "nonFO_direct": 0, "FO_indirect": 0, "FO_direct": 0, "Huri": 0, "RunTime": 0,
-                   'FOR_direct': 0, 'FOR_indirect': 0,"nonSAF_indirect": 0, "nonSAF_direct": 0,
-                   "SAF_indirect": 0, "SAF_direct": 0, "Huri_SAF": 0}
+    # def MC_calculate(self,record_SAF,MC_result, nodes, branches):
+    #     shared_dict = None
+    #     MC_result_list = []
+    #     summary = {"nonFO_indirect": 0, "nonFO_direct": 0, "FO_indirect": 0, "FO_direct": 0, "Huri": 0, "RunTime": 0,
+    #                'FOR_direct': 0, 'FOR_indirect': 0,"nonSAF_indirect": 0, "nonSAF_direct": 0,
+    #                "SAF_indirect": 0, "SAF_direct": 0, "Huri_SAF": 0}
+    #
+    #     start_time = time.time()
+    #     icurr = []
+    #     dataset_ins = []
+    #     dataset_saf = []
+    #     FO_direct = []
+    #     FO_indirect = []
+    #     SAF_direct = []
+    #     SAF_indirect = []
+    #     dataset = []
+    #
+    #     R = 100
+    #     constants = Constant()
+    #     constants.ep0 = 8.85e-12
+    #     index = 0
+    #     calculate_saf = 1
+    #     huri = 0
+    #       # 创建一个共享字典
+    #     if record_SAF==1:
+    #         for MC in MC_result:
+    #             FO_direct,FO_indirect,SAF_direct,SAF_indirect,huri,index  = self.Huri_method_SAF(MC, nodes, branches,shared_dict,
+    #                                                                                    dataset_ins,dataset_saf,FO_direct,FO_indirect,
+    #                                                                                    SAF_direct,SAF_indirect,constants,index,huri)
+    #         SAF_true_count_direct = len(list(filter(lambda x: x, SAF_direct)))
+    #         SAF_false_count_direct = len(FO_direct) - SAF_true_count_direct
+    #         SAF_true_count_indirect = len(list(filter(lambda x: x, SAF_indirect)))
+    #         SAF_false_count_indirect = len(FO_indirect) - SAF_true_count_indirect
+    #         summary["SAF_direct"] = SAF_true_count_direct
+    #         summary["SAF_indirect"] = SAF_true_count_indirect
+    #         summary["nonSAF_direct"] = SAF_false_count_direct
+    #         summary["nonSAF_indirect"] = SAF_false_count_indirect
+    #
+    #     else:
+    #         for MC in MC_result:
+    #             FO_direct,FO_indirect,huri,index  = self.Huri_method_INS(MC, nodes, branches,shared_dict,dataset,
+    #                                                               FO_indirect,FO_direct,constants,index,huri)
+    #     end_time = time.time()  # 记录结束时间
+    #     duration = end_time - start_time  # 计算运行时长
+    #     true_count_direct = len(list(filter(lambda x: x, FO_direct)))
+    #     false_count_direct = len(FO_direct) -true_count_direct
+    #     true_count_indirect = len(list(filter(lambda x: x, FO_indirect)))
+    #     false_count_indirect = len(FO_indirect) - true_count_indirect
+    #     summary["FO_direct"] = true_count_direct
+    #     summary["FO_indirect"] = true_count_indirect
+    #     summary["nonFO_direct"] = false_count_direct
+    #     summary["nonFO_indirect"] = false_count_indirect
+    #     summary["FOR_direct"] = 100*true_count_direct/len(FO_direct)*2 if len(FO_direct)*2>0 else 0
+    #     summary["FOR_indirect"] = 100 * true_count_indirect / len(FO_indirect) * 2 if len(FO_indirect) !=0 else 0
+    #     summary["Huri"] = huri
+    #     summary["RunTime"] = duration
+    #     print("FO_direct: ", summary["FO_direct"])
+    #     print("FO_indirect: ", summary["FO_indirect"])
+    #     print("nonFO_direct: ", summary["nonFO_direct"])
+    #     print("nonFO_indirect: ", summary["nonFO_indirect"])
+    #     print("Huri: ",summary["Huri"])
+    #     print("SAF_direct: ", summary["SAF_direct"])
+    #     print("SAF_indirect: ", summary["SAF_indirect"])
+    #     print("nonSAF_direct: ", summary["nonSAF_direct"])
+    #     print("nonSAF_indirect: ", summary["nonSAF_indirect"])
+    #     print("Huri: ",summary["Huri"])
+    #     print("Running time: ",summary["RunTime"])  # 打印运行时长
+    #         #df = pd.DataFrame(summary)
+    #         # 保存DataFrame到CSV文件
+    #
+    #     return summary
 
-        start_time = time.time()
-        icurr = []
-        dataset_ins = []
-        dataset_saf = []
-        FO_direct = []
-        FO_indirect = []
-        SAF_direct = []
-        SAF_indirect = []
-        dataset = []
+    def MC_calculate(self, record_SAF, MC_result, nodes, branches):
+        from pathos.multiprocessing import ProcessPool
+        from tqdm import tqdm
+        import os
+        import time
 
-        R = 100
+        # 初始化summary字典
+        summary = {
+            "nonFO_indirect": 0, "nonFO_direct": 0, "FO_indirect": 0, "FO_direct": 0,
+            "Huri": 0, "RunTime": 0, "FOR_direct": 0, "FOR_indirect": 0,
+            "nonSAF_indirect": 0, "nonSAF_direct": 0, "SAF_indirect": 0, "SAF_direct": 0,
+            "Huri_SAF": 0
+        }
+
+        # 常量和初始变量
         constants = Constant()
         constants.ep0 = 8.85e-12
-        index = 0
-        calculate_saf = 1
-        huri = 0
-          # 创建一个共享字典
-        if record_SAF==1:
-            for MC in MC_result:
-                FO_direct,FO_indirect,SAF_direct,SAF_indirect,huri,index  = self.Huri_method_SAF(MC, nodes, branches,shared_dict,
-                                                                                       dataset_ins,dataset_saf,FO_direct,FO_indirect,
-                                                                                       SAF_direct,SAF_indirect,constants,index,huri)
-            SAF_true_count_direct = len(list(filter(lambda x: x, SAF_direct)))
-            SAF_false_count_direct = len(FO_direct) - SAF_true_count_direct
-            SAF_true_count_indirect = len(list(filter(lambda x: x, SAF_indirect)))
-            SAF_false_count_indirect = len(FO_indirect) - SAF_true_count_indirect
-            summary["SAF_direct"] = SAF_true_count_direct
-            summary["SAF_indirect"] = SAF_true_count_indirect
-            summary["nonSAF_direct"] = SAF_false_count_direct
-            summary["nonSAF_indirect"] = SAF_false_count_indirect
 
-        else:
-            for MC in MC_result:
-                FO_direct,FO_indirect,huri,index  = self.Huri_method_INS(MC, nodes, branches,shared_dict,dataset,
-                                                                  FO_indirect,FO_direct,constants,index,huri)
-        end_time = time.time()  # 记录结束时间
-        duration = end_time - start_time  # 计算运行时长
-        true_count_direct = len(list(filter(lambda x: x, FO_direct)))
-        false_count_direct = len(FO_direct) -true_count_direct
-        true_count_indirect = len(list(filter(lambda x: x, FO_indirect)))
-        false_count_indirect = len(FO_indirect) - true_count_indirect
+        # 单MC处理函数
+        def process_single_MC(args):
+            MC, self_copy, nodes_copy, branches_copy, record_SAF, constants = args
+            FO_direct = []
+            FO_indirect = []
+            SAF_direct = []
+            SAF_indirect = []
+            dataset_ins = []
+            dataset_saf = []
+            dataset = []
+            huri = 0
+            index = 0
+
+            if record_SAF == 1:
+                FO_direct_out, FO_indirect_out, SAF_direct_out, SAF_indirect_out, huri, index = self_copy.Huri_method_SAF(
+                    MC, nodes_copy, branches_copy, None, dataset_ins, dataset_saf,
+                    FO_direct, FO_indirect, SAF_direct, SAF_indirect, constants, index, huri
+                )
+                return {
+                    "FO_direct": FO_direct_out, "FO_indirect": FO_indirect_out,
+                    "SAF_direct": SAF_direct_out, "SAF_indirect": SAF_indirect_out,
+                    "huri": huri
+                }
+            else:
+                FO_direct_out, FO_indirect_out, huri, index = self_copy.Huri_method_INS(
+                    MC, nodes_copy, branches_copy, None, dataset, FO_indirect, FO_direct,
+                    constants, index, huri
+                )
+                return {
+                    "FO_direct": FO_direct_out, "FO_indirect": FO_indirect_out,
+                    "SAF_direct": [], "SAF_indirect": [], "huri": huri
+                }
+
+        # 主程序
+        start_time = time.time()
+
+        # 创建进程池
+        num_cores = min(os.cpu_count(), 4)  # 限制最大核心数，可调整
+        pool = ProcessPool(nodes=num_cores)
+
+        # 准备参数列表，每个MC使用self的深拷贝
+        args_list = [(MC, copy.deepcopy(self), nodes, branches, record_SAF, constants)
+                     for MC in MC_result]
+
+        # 并行执行
+        results = pool.imap(process_single_MC, args_list)
+
+        # 收集结果
+        FO_direct_all = []
+        FO_indirect_all = []
+        SAF_direct_all = []
+        SAF_indirect_all = []
+        huri_total = 0
+
+        for result in tqdm(results, total=len(MC_result), desc="Processing MCs"):
+            FO_direct_all.extend(result["FO_direct"])
+            FO_indirect_all.extend(result["FO_indirect"])
+            SAF_direct_all.extend(result["SAF_direct"])
+            SAF_indirect_all.extend(result["SAF_indirect"])
+            huri_total += result["huri"]
+
+        # 关闭进程池
+        pool.close()
+        pool.join()
+
+        # 计算统计数据
+        end_time = time.time()
+        duration = end_time - start_time
+
+        true_count_direct = len(list(filter(lambda x: x, FO_direct_all)))
+        false_count_direct = len(FO_direct_all) - true_count_direct
+        true_count_indirect = len(list(filter(lambda x: x, FO_indirect_all)))
+        false_count_indirect = len(FO_indirect_all) - true_count_indirect
+
         summary["FO_direct"] = true_count_direct
         summary["FO_indirect"] = true_count_indirect
         summary["nonFO_direct"] = false_count_direct
         summary["nonFO_indirect"] = false_count_indirect
-        summary["FOR_direct"] = 100*true_count_direct/len(FO_direct)*2 if len(FO_direct)*2>0 else 0
-        summary["FOR_indirect"] = 100 * true_count_indirect / len(FO_indirect) * 2 if len(FO_indirect) !=0 else 0
-        summary["Huri"] = huri
+        summary["FOR_direct"] = 100 * true_count_direct / len(FO_direct_all) * 2 if len(FO_direct_all) * 2 > 0 else 0
+        summary["FOR_indirect"] = 100 * true_count_indirect / len(FO_indirect_all) * 2 if len(
+            FO_indirect_all) != 0 else 0
+        summary["Huri"] = huri_total
         summary["RunTime"] = duration
+
+        if record_SAF == 1:
+            SAF_true_count_direct = len(list(filter(lambda x: x, SAF_direct_all)))
+            SAF_false_count_direct = len(FO_direct_all) - SAF_true_count_direct
+            SAF_true_count_indirect = len(list(filter(lambda x: x, SAF_indirect_all)))
+            SAF_false_count_indirect = len(FO_indirect_all) - SAF_true_count_indirect
+
+            summary["SAF_direct"] = SAF_true_count_direct
+            summary["SAF_indirect"] = SAF_true_count_indirect
+            summary["nonSAF_direct"] = SAF_false_count_direct
+            summary["nonSAF_indirect"] = SAF_false_count_indirect
+            summary["Huri_SAF"] = huri_total
+
+        # 打印结果
         print("FO_direct: ", summary["FO_direct"])
         print("FO_indirect: ", summary["FO_indirect"])
         print("nonFO_direct: ", summary["nonFO_direct"])
         print("nonFO_indirect: ", summary["nonFO_indirect"])
-        print("Huri: ",summary["Huri"])
-        print("SAF_direct: ", summary["SAF_direct"])
-        print("SAF_indirect: ", summary["SAF_indirect"])
-        print("nonSAF_direct: ", summary["nonSAF_direct"])
-        print("nonSAF_indirect: ", summary["nonSAF_indirect"])
-        print("Huri: ",summary["Huri"])
-        print("Running time: ",summary["RunTime"])  # 打印运行时长
-            #df = pd.DataFrame(summary)
-            # 保存DataFrame到CSV文件
+        print("FOR_direct: ", summary["FOR_direct"])
+        print("FOR_indirect: ", summary["FOR_indirect"])
+        print("Huri: ", summary["Huri"])
+        if record_SAF == 1:
+            print("SAF_direct: ", summary["SAF_direct"])
+            print("SAF_indirect: ", summary["SAF_indirect"])
+            print("nonSAF_direct: ", summary["nonSAF_direct"])
+            print("nonSAF_indirect: ", summary["nonSAF_indirect"])
+            print("Huri_SAF: ", summary["Huri_SAF"])
+        print("Running time: ", summary["RunTime"])
 
         return summary
 
@@ -1923,7 +2062,7 @@ class Network:
             U_out, I_out, shared_dict = self.source_Indirect(MC[0], nodes, branches, constants, shared_dict)
             sources = self.add_lump(U_out, I_out)
             #solution, ins = process_calculate(MC, nodes, branches, self, index, shared_dict,calculate_ins)
-            ins = process_calculate(sources, self, index, calculate_ins)
+            ins,saf = process_calculate(sources, self, index, calculate_ins)
             index = index + 1
             #if ins["FO"]:
             if ins:
@@ -1964,7 +2103,7 @@ class Network:
         U_out, I_out, shared_dict = self.source_Indirect(MC[0], nodes, branches, constants, shared_dict)
         sources = self.add_lump(U_out, I_out)
         # solution, ins = process_calculate(MC, nodes, branches, self, index, shared_dict,calculate_ins)
-        ins = process_calculate(sources, self, index, calculate_ins)
+        ins,saf = process_calculate(sources, self, index, calculate_ins)
         index = index + 1
        # if ins["FO"]:
         if ins:
@@ -2072,11 +2211,16 @@ def process_calculate(sources,self_ref,index,calculate_saf):
     line_matrix = self_ref.H["Line"]
     tower_matrix = self_ref.H["Tower"]
     result_tower, bran = self_ref.calculate_of_hybrid_mode(line_matrix, tower_matrix, sources, self_ref.Nt, self_ref.dt, self_ref.GPU_calculation)
-    print("calculate"+str(index))
+    #print("calculate"+str(index))
     FO_Tower = []
     SAF_Arrestor = []
     ins = False
     saf = False
+    # 记录哪个塔损坏次数更多
+    fo_tower = [tower for fo_bran in bran['SDEM']
+                for tower, tower_bran in self_ref.Tower2ins_bran.items() if fo_bran in tower_bran]
+    self_ref.weak_point = {t: self_ref.weak_point.get(t) + (1 if t in fo_tower else 0) for t in list(self_ref.weak_point.keys())}
+
     if len(bran["SDEM"])>0:
         ins = True
         # 指定CSV文件名
