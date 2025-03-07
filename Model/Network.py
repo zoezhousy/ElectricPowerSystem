@@ -273,6 +273,7 @@ class Network:
         if 'Source' in load_dict and "Lightning" in load_dict['Source']:
             light = load_dict["Source"]["Lightning"]
             lightning = initial_lightning(light, dt=self.dt)
+
             self.lightning = lightning
             if light["area"].split("_")[0] == "OHL":
                 bran = None
@@ -411,7 +412,7 @@ class Network:
                     [I_out,
                      LightningCurrent_calculate_indirect(nodes, lightning, stroke_sequence=i)],
                     axis=1, ignore_index=True)
-        if lightning.type == "Direct":
+        elif lightning.type == "Direct":
             closet_node = self.closest_node(area, wire, position)
             lightning.closet_node = closet_node
             for i in range(len(lightning.strokes)):
@@ -420,6 +421,8 @@ class Network:
                 I_out = pd.concat([I_out,
                      LightningCurrent_calculate_direct(closet_node, nodes, lightning, stroke_sequence=i)],
                     axis=1, ignore_index=True)
+        else:
+            print("Lightning type is not correct, please input correct type: Indirect, Direct")
         # Source_Matrix = pd.concat([I_out, U_out], axis=0)
         return U_out, I_out, shared_dict
 
@@ -777,15 +780,32 @@ class Network:
 
         self.H = {"Line": line_matrix,"Tower": tower_matrix}
         result_tower, other = self.calculate_of_hybrid_mode(line_matrix, tower_matrix, self.sources, self.Nt, self.dt, self.GPU_calculation)
+
         broken_arrestor_list = [self.arrestor_bran2Tower[bran][1] for bran in other["NLR"] if bran in self.arrestor_bran2Tower.keys()]
         self.broken = list(set(broken_arrestor_list))
         measure_result = self.run_measure(result_tower)
-        result_tower = pa.Table.from_pandas(result_tower.T)
+        result_tower_pa = pa.Table.from_pandas(result_tower.T)
         sources_pa = pa.Table.from_pandas(self.sources.T)
+        target_tower = self.lightning.closet_node.target_tower
+        swhs_node = {}
+        FO_node = {}
+        for tower in self.towers:
+            if tower.name in target_tower:
+                swhs_node.update({tower.name + "_" + swh.name: [swh.name, swh.node1[0], swh.node2[0],swh.bran[0]] for ins in
+                     tower.devices.insulators for swh in
+                     ins.switch_disruptive_effect_models})
+            FO_node.update({tower.name + "_" + swh.name: [swh.name, swh.node1[0], swh.node2[0],swh.bran[0]] for ins in
+                 tower.devices.insulators for swh in ins.switch_disruptive_effect_models if swh.bran[0] in other["SDEM"]})
+        #添加离source近的塔的结果
 
+        targeted_result = pd.DataFrame(
+            {v[0] : abs(result_tower.loc[v[1]] - result_tower.loc[v[2]])
+             for k, v in swhs_node.items()}).T
+        FO_result = pd.DataFrame(
+            {v[0] : abs(result_tower.loc[v[1]] - result_tower.loc[v[2]])
+             for k, v in FO_node.items()}).T
 
-
-        return measure_result,result_tower,sources_pa
+        return targeted_result,result_tower_pa,sources_pa,FO_result
         # result_tower.to_csv("Data/Output/result_tower_output.csv")
         # result_v_ohl.to_csv("Data/Output/result_v_ohl_output.csv")
         # result_i_ohl.to_csv("Data/Output/result_i_ohl_output.csv")

@@ -471,9 +471,9 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                         target_tower = network.lightning.closet_node.target_tower
                         for tower in network.towers:
                             if tower.name in target_tower:
-                                swhs_node = {tower.name+"_"+swh.name: [swh.name, swh.node1[0], swh.node2[0]] for ins in
+                                swhs_node.update({tower.name+"_"+swh.name: [swh.name, swh.node1[0], swh.node2[0]] for ins in
                                              tower.devices.insulators for swh in
-                                             ins.switch_disruptive_effect_models}
+                                             ins.switch_disruptive_effect_models})
 
                         result_tower, other = network.calculate_of_hybrid_mode(line_matrix, tower_matrix,
                                                                                network.sources,

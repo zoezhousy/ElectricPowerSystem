@@ -33,30 +33,33 @@ def load_json_file(file_path):
         return json.load(f)
 
 
-def run_base_calculation(network, load_dict, save_path):
+def run_base_calculation(network_obj, load_dict_data, save_path, file):
     """
     执行基础计算模块
-    :param network: Network对象
-    :param load_dict: 加载的JSON数据
+    :param file:
+    :param network_obj: Network对象
+    :param load_dict_data: 加载的JSON数据
     :param save_path: 结果保存路径
     """
-    result,tower_result,source_result = network.run_base(load_dict)
-    df_measure = pd.DataFrame(result)
-    df_measure.to_csv(f'{save_path}base_measure/result.csv', index=False, header=True)
-    pacsv.write_csv(tower_result, f'{save_path}base_measure/result_tower_output.csv')
-    pacsv.write_csv(source_result, f'{save_path}base_measure/result_lightning.csv')
+    targeted_result,tower_result,source_result,FO_result = network_obj.run_base(load_dict_data)
+    df_measure = pd.DataFrame(targeted_result)
+    df_measure.to_csv(f'{save_path}base_measure/result_{file}.csv', index=True, header=True)
+    df_FO = pd.DataFrame(targeted_result)
+    df_FO.to_csv(f'{save_path}base_measure/FO_result_{file}.csv', index=True, header=True)
+    pacsv.write_csv(tower_result, f'{save_path}base_measure/solution_output_{file}.csv')
+    pacsv.write_csv(source_result, f'{save_path}base_measure/result_lightning_{file}.csv')
     #show_result(df_measure, save_path)
     print(f'基本模块计算结束，结果保存在{save_path}base_measure/目录中')
 
 
-def run_sensitivity_analysis(network, load_dict, save_path):
+def run_sensitivity_analysis(network_obj, load_dict_data, save_path):
     """
     执行灵敏度分析模块
-    :param network: Network对象
-    :param load_dict: 加载的JSON数据
+    :param network_obj: Network对象
+    :param load_dict_data: 加载的JSON数据
     :param save_path: 结果保存路径
     """
-    mode = load_dict["Sensitivity_analysis"]["mode"]
+    mode = load_dict_data["Sensitivity_analysis"]["mode"]
     # 单个参数变化
     # if mode ==0:
     #     result_before = network.run_MC(load_dict)
@@ -68,13 +71,13 @@ def run_sensitivity_analysis(network, load_dict, save_path):
 
     # 概率分布，多参数变化结合
     if mode == 0:
-        network.Distance = 100
+        network_obj.Distance = 100
         # result_before = network.run_MC(load_dict)
-        FO_matrix, SAF_matrix = network.sensitive_MC(load_dict)
+        FO_matrix, SAF_matrix = network_obj.sensitive_MC(load_dict_data)
         print(FO_matrix)
     # 单次计算，单个参数改变
     elif mode == 1:
-        result_before, results_after = network.sensitive_analysis(load_dict,save_path+'sensitive/')
+        result_before, results_after = network_obj.sensitive_analysis(load_dict_data, save_path + 'sensitive/')
         if results_after:
             for param_type, result in results_after.items():
                 df_after = pd.DataFrame(result)
@@ -82,18 +85,18 @@ def run_sensitivity_analysis(network, load_dict, save_path):
 
     # 单次计算，多个参数改变
     elif mode == 2:
-        result_before, result_after = network.sensitive_analysis(load_dict,save_path+'sensitive/')
+        result_before, result_after = network_obj.sensitive_analysis(load_dict_data, save_path + 'sensitive/')
         if result_after:
             pd.DataFrame(result_after )
             print(f"  Combined: {result_after}")
             show_result(result_after, save_path+'sensitive')
     # 多次计算，多个参数改变
     elif mode == 3:
-        result_before, results_after = network.sensitive_analysis(load_dict,save_path+'sensitive/')
+        result_before, results_after = network_obj.sensitive_analysis(load_dict_data, save_path + 'sensitive/')
         if results_after:
             for param_type, result in results_after.items():
                 df_after = pd.DataFrame(
-                    result if network.global_set(load_dict).get("Hybrid_method", 0) == 1 else result[0])
+                    result if network_obj.global_set(load_dict_data).get("Hybrid_method", 0) == 1 else result[0])
                 # 保存到 save_path 而不是 output_path，与其他模式保持一致
                 df_after.to_csv(f'{save_path}sensitive/{param_type.lower()}_sequential.csv')
                 print(f"  {param_type}: {result}")
@@ -120,8 +123,9 @@ def run_monte_carlo_simulation(network, load_dict, save_path):
 
 if __name__ == '__main__':
     # 配置路径和文件名
-    path = "Data/input/case3_nonlinear/"
-    file_name = "nonlinear_ye"
+    #path = "Data/input/case3_nonlinear/"
+    path = "Data/input/case2_linear/"
+    file_name = "BaseModuletest6_HEXIAO"
     json_file_path = f'{path}{file_name}.json'
 
     # 加载JSON文件
@@ -133,7 +137,7 @@ if __name__ == '__main__':
     # 根据计算模型执行不同的逻辑
     calculation = load_dict["Global"]["Calculation_Model"]
     if calculation == 0:
-        run_base_calculation(network, load_dict, path)
+        run_base_calculation(network, load_dict, path,file_name)
     elif calculation == 1:
         run_sensitivity_analysis(network, load_dict, path)
     elif calculation == 2:

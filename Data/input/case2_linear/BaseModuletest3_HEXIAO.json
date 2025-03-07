@@ -15372,7 +15372,7 @@
   "Source":
     {
       "Lightning": {
-      "type": "Inirect",
+      "type": "Indirect",
         "area": "OHL_1",
         "wire": null,
         "cir_id": "3001",
@@ -15387,7 +15387,7 @@
         "Stroke": [
           {
             "type": "Heidler",
-            "duration": 2e-5,
+            "duration": 8e-5,
             "parameters": null,
             "parameter_set": "8/20us"
           }
@@ -15398,7 +15398,7 @@
 
   "Global": {
     "delta_time": 1e-08,
-    "time": 2e-5,
+    "time": 8e-5,
     "constant_frequency": 2e4,
     "max_length": 20,
     "global_ground": 1,
