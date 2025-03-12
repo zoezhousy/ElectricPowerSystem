@@ -13048,37 +13048,24 @@
       "ionisation_model": ""
     },
     "GPU_calculation": 1,
-    "Calculation_Model": 0,
+    "Calculation_Model": 2,
     "Hybrid_method": 1
   },
   "Sensitivity_analysis":{
     "mode": 1,
-    "Stroke": {
-      "position": null,
-      "area": null,
-      "wire": null,
-      "cir_id": null,
-      "phase": null,
-      "waveform": [],
-      "paramenters": []
-    },
-    "Soil": [],
-    "Arrester": {
-      "name": null
-    },
-    "SW": {
-      "name": null
+    "Stroke_position": [0,
+      {
+        "type": "Direct",
+        "position": [1000,0,10],
+        "area": "tower_18",
+        "wire": "Y01_Tower_18"
+       },
+      {
+        "type": "Indirect",
+        "position": [500,50,0]
+       }
+    ]
 
-    },
-    "ROD": {
-      "tower": null,
-      "lump": null,
-      "r": null,
-      "l": null
-
-    },
-    "DE": 1750000,
-    "ground": null
 
   },
   "MC": {
@@ -13088,8 +13075,8 @@
       "Dymax":1500,
       "Dyp":100,
       "pointmd":200,
-      "pn": 10000000,
-      "pn2": 1000000,
+      "pn": 1000,
+      "pn2": 1000,
       "mode": 2,
       "fixn": 1000,
       "Ip1stmin": 5,
@@ -13139,7 +13126,7 @@
       "userInput4d": 1,
       "userInput4ind": 1
     },
-    "Record_SAF": 1
+    "Record_SAF": 0
 
   }
 

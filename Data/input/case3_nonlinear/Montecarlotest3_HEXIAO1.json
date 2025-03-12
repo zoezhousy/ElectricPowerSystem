@@ -15411,7 +15411,7 @@
       "ionisation_model": ""
     },
     "GPU_calculation": 1,
-    "Calculation_Model": 0,
+    "Calculation_Model": 2,
     "Hybrid_method": 1
   },
   "Sensitivity_analysis":{
@@ -15447,12 +15447,12 @@
   "MC": {
     "surrounding_distance": 1500,
     "MC_lgtn": {
-      "casemodel": 2,
+      "casemodel": 1,
       "Dymax":1500,
       "Dyp":100,
       "pointmd":200,
-      "pn": 10000000,
-      "pn2": 1000000,
+      "pn": 1000,
+      "pn2": 1000,
       "mode": 2,
       "fixn": 1000,
       "Ip1stmin": 5,
@@ -15502,7 +15502,7 @@
       "userInput4d": 1,
       "userInput4ind": 1
     },
-    "Record_SAF": 1
+    "Record_SAF": 0
 
   }
 

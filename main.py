@@ -82,7 +82,6 @@ def run_sensitivity_analysis(network_obj, load_dict_data, save_path):
             for param_type, result in results_after.items():
                 df_after = pd.DataFrame(result)
                 df_after.to_csv(f'{save_path}sensitive/{param_type.lower()}_modified.csv')
-
     # 单次计算，多个参数改变
     elif mode == 2:
         result_before, result_after = network_obj.sensitive_analysis(load_dict_data, save_path + 'sensitive/')
@@ -104,31 +103,41 @@ def run_sensitivity_analysis(network_obj, load_dict_data, save_path):
 
     print(f'灵敏度计算结束，结果保存在{save_path}sensitive/目录中')
 
-def run_monte_carlo_simulation(network, load_dict, save_path):
+def run_monte_carlo_simulation(network, load_dict, save_path,file):
     """
     执行蒙特卡洛模拟模块
     :param network: Network对象
     :param load_dict: 加载的JSON数据
     :param save_path: 结果保存路径
     """
-    #distance = network.Pre_run_MC(load_dict)
+
+    # pre_run_file_name = load_dict["MC"]["pre_run_file"]
+    # pre_run_json_file_path = f'{path}{pre_run_file_name}.json'
+    # # 加载JSON文件
+    # pre_run_load_dict = load_json_file(pre_run_json_file_path)
+    #
+    # distance = network.Pre_run_MC(pre_run_load_dict)
     distance = 600  # 预设距离为600，用于方便下一步的计算。
 
     network = Network()
     network.Distance = distance
-    result = network.run_MC(load_dict)
-    name = "Heidler_perfect_10000_IP100"
+    result,tower_fo_direct,tower_fo_indirect = network.run_MC(load_dict)
+    name = "test3_1000"
     df = pd.DataFrame(result, index=[name])
+    df_fo_direct = pd.DataFrame(tower_fo_direct, index=[name])
+    df_fo_indirect = pd.DataFrame(tower_fo_indirect, index=[name])
     df.to_csv(f'{save_path}mc/summary_values_ins.csv', mode='a')
-
+    df_fo_direct.to_csv(f'{save_path}mc/FO_Tower_direct_{file}.csv', mode='a')
+    df_fo_indirect.to_csv(f'{save_path}mc/FO_Tower_indirect_{file}.csv', mode='a')
+    print(f'风险评估计算结束，结果保存在{save_path}mc/目录中')
 
 if __name__ == '__main__':
     # 配置路径和文件名
     path = "Data/input/case3_nonlinear/"
     #path = "Data/input/case2_linear/"
     #file_name = "BaseModuletest6_HEXIAO"
-    #file_name = "nonlinear_ye"
-    file_name = "Montecarlotest1_HEXIAO1"
+    file_name = "nonlinear_ye"
+    #file_name = "Montecarlotest4_HEXIAO1"
     json_file_path = f'{path}{file_name}.json'
 
     # 加载JSON文件
@@ -144,4 +153,4 @@ if __name__ == '__main__':
     elif calculation == 1:
         run_sensitivity_analysis(network, load_dict, path)
     elif calculation == 2:
-        run_monte_carlo_simulation(network, load_dict, path)
+        run_monte_carlo_simulation(network, load_dict, path,file_name)

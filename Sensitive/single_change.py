@@ -149,6 +149,7 @@ from Driver.modeling.tower_modeling import tower_building, tower_building_varian
 from Driver.modeling.OHL_modeling import OHL_building
 from Model.Lightning import Stroke,Channel,Lightning
 from Function.Calculators.InducedVoltage_calculate import InducedVoltage_calculate_direct,LightningCurrent_calculate_direct
+from collections import defaultdict, deque
 
 def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                              output_path):
@@ -246,7 +247,7 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
 
         network.sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
         return swhs_node
-    def modify_arrester(network, params):
+    def modify_arrester_name(network, params):
         if params.get("name") is not None:
             arrester_name = params["name"]
             print(f"Removing arrester: {arrester_name}")
@@ -273,11 +274,12 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                         # 保留此塔的 arrester，更新 last_kept_position
                         last_kept_position = current_pos
         for tower in network.towers:
-            gnd = network.ground if network.global_ground == 1 else tower.ground
-            if tower.info.con_mode == 1:
-                network.tower_building_variant_frequency(tower, gnd, network.varied_frequency, network.Nfit, network.dt)
-            else:
+            if tower.info.name == value:
+                tower.reset_matrix()
+                gnd = network.ground if network.global_ground == 1 else tower.ground
                 network.tower_building()
+                tower_building(tower, gnd)
+
 
     def modify_arrester_distance(network, value):
 
@@ -307,26 +309,47 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                     last_kept_position = current_pos
 
 
-    def modify_sw(network, params):
-        if params.get("name") is not None:
-            sw_name = params["name"]
+    def modify_sw_distance(network, params):
+        # 根据距离间隔保留 arrester
+        distance_interval = value
+        print(f"Keeping sw every {distance_interval} meters")
+        # 按塔的 position 排序
+        ohls_sorted = sorted(network.OHLs, key=lambda o: o.info.HeadTower_pos)  # 假设沿 x 轴排序
+        last_kept_position = None
+
+        for tower in ohls_sorted:
+            print(tower.name)
+            if not hasattr(tower, 'devices'):
+                print(f"Warning: Invalid tower object in network.towers: {tower}")
+                continue
+            current_pos = tower.info.position
+            if last_kept_position is None:
+                last_kept_position = current_pos
+            else:
+                dist = distance(last_kept_position, current_pos)
+                if dist < distance_interval:
+                    # 删除此塔的所有 arrester
+                    tower.devices.arrestors = []
+                    tower.devices.arrestors_bran = []
+                else:
+                    # 保留此塔的 arrester，更新 last_kept_position
+                    last_kept_position = current_pos
+
+
+    def modify_sw_name(network, params):
+        if params is not None:
+            sw_name = params
             print(f"Removing OHL wire: {sw_name}")
             for ohl in network.OHLs:
-                ohl.wires.all_wires = {
-                    key: wire for key, wire in ohl.wires.get_all_wires().items() if wire.name != sw_name
-                }
-        for ohl in network.OHLs:
-            gnd = network.ground if network.global_ground == 1 else ohl.ground
-            if ohl.info.con_mode == 1 or gnd.gnd_mode == 2:
-                if network.Hybrid_method == 1:
-                    network.OHL_building_hybrid_variant_frequency(ohl, network.max_length, gnd,
-                                                                  network.varied_frequency, network.fixed_frequency,
-                                                                  network.Nfit, network.dt)
-                else:
-                    network.OHL_building_variant_frequency(ohl, network.max_length, gnd, network.varied_frequency,
-                                                           network.fixed_frequency, network.Nfit, network.dt)
-            else:
-                network.OHL_building(ohl, network.max_length, gnd)
+                for wire in ohl.wires.air_wires:
+                    if wire.name == sw_name:
+                        ohl.wires.air_wires = [wire for wire in ohl.wires.air_wires if wire.name != sw_name]
+                        ohl.wires_name = [wire.name for wire in ohl.wires.air_wires if wire.name != sw_name]
+                        gnd = network.ground if network.global_ground == 1 else ohl.ground
+                        ohl.reset_matrix()
+                        network.OHL_building(ohl, network.max_length, gnd,network.fixed_frequency)
+                        return network
+
 
     def modify_rod(network, params):
         if params.get("tower") is not None:
@@ -390,7 +413,7 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                 if "epr" in params:
                     network.epr = params["epr"]
 
-    def calculate(network,result,FO,swhs_node):
+    def calculate(network,result,swhs_node):
         tower_matrix = network.tower_individual_matrix()  # 合并tower矩阵
         line_matrix = network.line_individual_matrix()  # 合并cable和OHL矩阵
 
@@ -409,6 +432,209 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
         result = pd.concat([result, df_result], axis=0)
         return result,FO_result
 
+
+
+    # 构建图结构
+    def build_graph(OHLs, Towers):
+        # 图的邻接表：{tower_name: [(neighbor_name, distance)]}
+        graph = defaultdict(list)
+        # tower 名称到对象的映射
+        tower_map = {tower.info.name: tower for tower in Towers}
+        # tower 名称到位置的映射
+        tower_positions = {tower.info.name: tower.info.position for tower in Towers}
+
+        # 已访问的 tower 名称，用于推断尾 tower
+        visited_towers = set()
+
+        for ohl in OHLs:
+            head_tower = ohl.info.HeadTower
+            head_pos = ohl.info.HeadTower_pos
+
+            # 找到可能的尾 tower（假设 Towers 中有连接信息或通过位置推断）
+            tail_tower = None
+            min_distance = float('inf')
+            for tower in Towers:
+                if tower.info.name != head_tower and tower.info.name not in visited_towers:
+                    distance = calculate_distance(head_pos, tower.info.position)
+                    if distance < min_distance:
+                        min_distance = distance
+                        tail_tower = tower.info.name
+
+            if tail_tower:
+                # 添加边
+                distance = calculate_distance(head_pos, tower_positions[tail_tower])
+                graph[head_tower].append((tail_tower, distance))
+                graph[tail_tower].append((head_tower, distance))  # 无向图
+                visited_towers.add(head_tower)
+                visited_towers.add(tail_tower)
+
+        return graph, tower_map, tower_positions
+
+    # 计算距离函数
+    def calculate_distance(pos1, pos2):
+        # 假设为一维坐标
+        #return abs(pos2 - pos1)
+        # 如果是三维坐标
+        return ((pos2[0] - pos1[0])**2 + (pos2[1] - pos1[1])**2 + (pos2[2] - pos1[2])**2)**0.5
+
+    # 使用 BFS 计算从起点到每个 tower 的距离
+    def calculate_distances(graph, start_tower):
+        distances = {start_tower: 0}
+        queue = deque([start_tower])
+        visited = set([start_tower])
+
+        while queue:
+            current = queue.popleft()
+            for neighbor, distance in graph[current]:
+                if neighbor not in visited:
+                    distances[neighbor] = distances[current] + distance
+                    queue.append(neighbor)
+                    visited.add(neighbor)
+
+        return distances
+
+    # 判断是否为屏蔽线
+    def is_shielding_wire(wire_name):
+        first_part = wire_name.split('_')[0]
+        return first_part[-1] == 'S'
+
+    # 主逻辑
+    def process_arrestor_distance(OHLs, Towers, interval):
+        # 构建图和映射
+        graph, tower_map, tower_positions = build_graph(OHLs, Towers)
+
+        # 从第一个 ohl 的 HeadTower 开始
+        start_tower = OHLs[0].info.HeadTower
+        distances = calculate_distances(graph, start_tower)
+
+        # 确定保留的 tower
+        towers_to_keep = set()
+        max_distance = max(distances.values(), default=0)
+        for i in range(0, int(max_distance) + interval, interval):
+            closest_tower_name = min(distances.items(), key=lambda x: abs(x[1] - i), default=(None, 0))[0]
+            if closest_tower_name:
+                towers_to_keep.add(closest_tower_name)
+
+        # 处理 arrestors
+        for tower_name, tower in tower_map.items():
+            if tower_name not in towers_to_keep:
+                if not tower.devices.transformers:  # 如果 transformers 为空
+                    tower.devices.arrestors = []  # 删除 arrestors
+                    tower.devices.arrestors_bran = []  # 删除 arrestors
+                    tower.devices.arrestors_node1 = []  # 删除 arrestors
+                    tower.devices.arrestors_node2 = []  # 删除 arrestors
+
+                    tower.reset_matrix()
+                    gnd = network.ground if network.global_ground == 1 else tower.ground
+                    tower_building(tower, gnd)
+                # 如果 transformers 有值，则保留 arrestors
+
+    # 构建全局图结构并计算距离
+    def build_graph_and_distances(OHLs):
+        graph = defaultdict(list)
+        node_positions = {}
+
+        # 添加所有节点和边
+        for ohl in OHLs:
+            # HeadTower 和 TailTower 之间的边
+            head, tail = ohl.info.HeadTower, ohl.info.TailTower  # 假设尾节点名称
+            head_pos, tail_pos = ohl.info.HeadTower_pos, ohl.info.TailTower_pos
+            distance = calculate_distance(head_pos, tail_pos)
+            graph[head].append((tail, distance))
+            graph[tail].append((head, distance))
+            node_positions[head] = head_pos
+            node_positions[tail] = tail_pos
+
+            # wire 的连接
+            for wire in ohl.wires.air_wires:
+                start, end = wire.start_node.name, wire.end_node.name
+                start_pos = (wire.start_node.x, wire.start_node.y, wire.start_node.z)
+                end_pos = (wire.end_node.x, wire.end_node.y, wire.end_node.z)
+                distance = calculate_distance(start_pos, end_pos)
+                graph[start].append((end, distance))
+                graph[end].append((start, distance))
+                node_positions[start] = start_pos
+                node_positions[end] = end_pos
+
+        # 从第一个 HeadTower 开始计算距离
+        start_node = OHLs[0].info.HeadTower
+        distances = {start_node: 0}
+        queue = deque([start_node])
+        visited = set([start_node])
+
+        while queue:
+            current = queue.popleft()
+            for neighbor, distance in graph[current]:
+                if neighbor not in visited:
+                    distances[neighbor] = distances[current] + distance
+                    queue.append(neighbor)
+                    visited.add(neighbor)
+
+        return graph, distances, node_positions
+
+    # 确定保留的屏蔽线
+    def select_shielding_wires_to_keep(all_shielding_wires, interval):
+        wires_to_keep = set()
+        available_wires = all_shielding_wires.copy()  # 复制列表，避免修改原始数据
+
+        max_distance = max([d for _, _, d in available_wires], default=0)
+        for i in range(0, int(max_distance) + interval, interval):
+            if not available_wires:  # 如果没有可选的屏蔽线了，退出
+                break
+            # 找到距离 i 最近的未保留屏蔽线
+            closest = min(available_wires, key=lambda x: abs(x[2] - i))
+            ohl, wire, distance = closest
+            wires_to_keep.add(wire.name)
+            # 从可用列表中移除已选择的屏蔽线
+            available_wires.remove(closest)
+
+        return wires_to_keep
+    # 处理屏蔽线
+    def process_shielding_wires(OHLs, interval):
+        graph, distances, node_positions = build_graph_and_distances(OHLs)
+
+        # 收集所有屏蔽线及其位置
+        all_shielding_wires = []
+        for ohl in OHLs:
+            for wire in ohl.wires.air_wires:
+                if is_shielding_wire(wire.name):
+                    mid_distance = (distances.get(wire.start_node.name, 0) + distances.get(wire.end_node.name, 0)) / 2
+                    all_shielding_wires.append((ohl, wire, mid_distance))
+
+        if not all_shielding_wires:
+            return
+
+        # 确定保留的屏蔽线
+        wires_to_keep = select_shielding_wires_to_keep(all_shielding_wires, interval)
+
+        # 更新每个 ohl
+        for ohl in OHLs:
+            # 删除未保留的屏蔽线
+            nodes_to_remove = set()
+            wires_to_remove = set()
+            ohl.wires.air_wires[:] = [wire for wire in ohl.wires.air_wires
+                                      if not is_shielding_wire(wire.name) or wire.name in wires_to_keep]
+
+            # 处理 nodes_name 和 wires_name
+            ohl_name_prefix = ohl.name
+            for name_list, removal_set in [(ohl.nodes_name, nodes_to_remove), (ohl.wires_name, wires_to_remove)]:
+                new_list = []
+                for name in name_list:
+                    parts = name.split('_')
+                    prefix = '_'.join(parts[:-2]) if len(parts) > 2 else name
+                    if prefix == ohl_name_prefix:
+                        removal_set.add(name)
+                    else:
+                        new_list.append(name)
+                name_list[:] = new_list
+
+            # 更新 capacitance_matrix
+            if isinstance(ohl.capacitance_matrix, pd.DataFrame):
+                ohl.capacitance_matrix = ohl.capacitance_matrix.drop(index=list(nodes_to_remove),
+                                                                     columns=list(wires_to_remove),
+                                                                     errors='ignore')
+
+
     """根据参数类型和运行模式执行敏感性分析，返回修改前和修改后结果"""
     os.makedirs(output_path, exist_ok=True)
 
@@ -423,6 +649,9 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
     network.H = {"Line": line_matrix, "Tower": tower_matrix}
 
     branches, nodes = network.calculate_branches(network.max_length)
+    interval = 30  # 间隔 50 米
+    process_shielding_wires(network.OHLs, interval)
+
     constants = Constant()
     share_dict = {}
     network.sources = network.source_initial(load_dict, nodes, branches, constants, share_dict)
@@ -438,15 +667,25 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
     param_types = ["Stroke_para_set","Stroke_amplitude","Stroke_position", "Soil_sig","Soil_epr", "Arrester", "SW", "ROD", "DE", "ground"]
     #modifications = {key: sa_dict.get(key) for key in param_types if sa_dict.get(key) not in [None, [], {}]}
     # 连续变量/不连续变量
+    # modifications = {
+    #     key: (
+    #         [i
+    #          for i in range(sa_dict.get(key)[0],sa_dict.get(key)[1],sa_dict.get(key)[2]) ]
+    #         if sa_dict.get("continue") == 1 and key != 'continue'
+    #         else sa_dict.get(key)
+    #     )
+    #     for key in param_types
+    #     if sa_dict.get(key) not in [None, [], {}] and key != 'continue'
+    # }
     modifications = {
         key: (
-            [i
-             for i in range(sa_dict.get(key)[0],sa_dict.get(key)[1],sa_dict.get(key)[2]) ]
-            if sa_dict.get("continue") == 1 and key != 'continue'
-            else sa_dict.get(key)
+            [i for i in range(sa_dict.get(key)[1], sa_dict.get(key)[2], sa_dict.get(key)[3])]
+            if isinstance(sa_dict.get(key), (list, tuple)) and len(sa_dict.get(key)) >= 4 and sa_dict.get(key)[0] == 1
+            else sa_dict.get(key)[1:] if isinstance(sa_dict.get(key), (list, tuple)) and sa_dict.get(key)[
+                0] == 0 else sa_dict.get(key)
         )
         for key in param_types
-        if sa_dict.get(key) not in [None, [], {}] and key != 'continue'
+        if sa_dict.get(key) not in [None, [], {}]
     }
     if mode == 1 or mode ==3:
         results_after = {}
@@ -563,7 +802,8 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                     FO_all = pd.DataFrame()
                     for value in params:
                         swhs_node = modify_soil_sig(network, value)
-                        merged_df,FO_all = calculate(network,merged_df,FO_all,swhs_node)
+                        merged_df,FO_result = calculate(network,merged_df,swhs_node)
+                        FO_all
                     pd.DataFrame(merged_df).to_csv(filename_voltage)
                 elif param_type == "Soil_epr":
                     filename_voltage = f"{output_path}epr_modified_{'hybrid' if use_hybrid else 'base'}_volatage_output.csv"
@@ -616,13 +856,21 @@ def run_sensitivity_analysis(network, load_dict, sa_dict, use_hybrid, mode,
                     filename = f"{output_path}ground_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
                 else:
                     if param_type == "Arrester_distance":
-                        modify_arrester_distance(network, params)
+                        swhs_node = [[swh.name, swh.node1[0], swh.node2[0]] for tower in network.towers for ins in
+                                     tower.devices.insulators for swh in ins.switch_disruptive_effect_models]
+
                         filename = f"{output_path}{param_type.lower()}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
+                        FO_all = pd.DataFrame()
+                        merged_df = pd.DataFrame()
+                        for value in params:
+                            interval = value
+                            process_arrestor_distance(network.OHLs, network.towers, interval)
+
                     if param_type == "Arrester_name":
                         modify_arrester_distance(network, params)
                         filename = f"{output_path}{param_type.lower()}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
-                    elif param_type == "SW" :
-                        modify_sw(network, params)
+                    elif param_type == "SW_distance" :
+                        modify_sw_distance(network, params)
                         filename = f"{output_path}{param_type.lower()}_modified_{'hybrid' if use_hybrid else 'base'}_output.csv"
                     elif param_type == "ROD":
                         merged_df = pd.DataFrame()

@@ -13084,14 +13084,14 @@
   "MC": {
     "surrounding_distance": 1500,
     "MC_lgtn": {
-      "casemodel": 2,
+      "casemodel": 1,
       "Dymax":1500,
       "Dyp":100,
       "pointmd":200,
-      "pn": 10000000,
-      "pn2": 1000000,
+      "pn": 1000,
+      "pn2": 1000,
       "mode": 2,
-      "fixn": 100,
+      "fixn": 1000,
       "Ip1stmin": 5,
       "Ip1stmax": 100,
       "tf1stmin": 0.5,
@@ -13139,7 +13139,8 @@
       "userInput4d": 1,
       "userInput4ind": 1
     },
-    "Record_SAF": 1
+    "Record_SAF": 0,
+    "pre_run_file": "Assessment_18_1213_Yeung.json"
 
   }
 
